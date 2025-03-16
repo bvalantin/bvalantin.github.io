@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Radio France Streamers</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.2/dist/hls.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
+  <style>
+    /* Existing styles... */
+  </style>
+</head>
+<body>
+  <ul id="station-list">
+    <li><a id="france-inter" href="https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose">France Inter</a></li>
+    <li><a id="franceinfo" href="https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose">Franceinfo</a></li>
+    <li><a id="france-culture" href="https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose">France Culture</a></li>
+    <li><a id="france-musique" href="https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose">France Musique</a></li>
+    <li><a id="fipRock" href="https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose">FIP Rock</a></li>
+    <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
+  </ul>
+  <a id="pause-button" href="#">Pause/play ([0])</a>
+
+  <video id="my-video" controls playsinline></video>
+  <div class="columns">
+    <div class="column" id="column1"></div>
+    <div class="column" id="column2"></div>
+    <div class="column" id="column3"></div>
+    <div class="column" id="column4"></div>
+  </div>
+  <script>
+    const hls = new Hls();
+    const video = document.getElementById('my-video');
+    hls.attachMedia(video);
+
+    const stationList = document.getElementById('station-list');
+    const anchors = stationList.querySelectorAll('a');
+    let currentStationIndex = -1;
+
+    function playStation(index) {
+      if (index >= 0 && index < anchors.length) {
+        const url = anchors[index].href;
+        hls.loadSource(url);
+        setTimeout(() => {
+          video.play();
+        }, 500);
+        currentStationIndex = index;
+      }
+    }
+
+    anchors.forEach((anchor, index) => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        playStation(index);
+      });
+    });
+
+    document.getElementById('pause-button').addEventListener('click', (event) => {
+      event.preventDefault();
+      video.paused ? video.play() : video.pause();
+    });
+
+    // Keystroke monitoring
+    document.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case '0':
+          video.paused ? video.play() : video.pause();
+          break;
+        case 'MediaTrackNext':
+          playStation((currentStationIndex + 1) % anchors.length);
+          break;
+        case 'MediaTrackPrevious':
+          playStation((currentStationIndex - 1 + anchors.length) % anchors.length);
+          break;
+      }
+    });
+
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+      console.log('Manifest parsed!');
+    });
+
+    window.addEventListener('offline', function() {
+      if (!video.paused) {
+        video.pause();
+        hls.stopLoad();
+      }
+    });
+  </script>
+</body>
+</html>
