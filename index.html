@@ -66,9 +66,11 @@
           video.paused ? video.play() : video.pause();
           break;
         case 'MediaTrackNext':
+        case 'ArrowRight':
           playStation((currentStationIndex + 1) % anchors.length);
           break;
         case 'MediaTrackPrevious':
+        case 'ArrowLeft':
           playStation((currentStationIndex - 1 + anchors.length) % anchors.length);
           break;
       }
