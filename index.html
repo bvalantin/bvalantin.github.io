@@ -86,19 +86,10 @@ if ('mediaSession' in navigator) {
   });
 }
 
-
-
-
     hls.on(Hls.Events.MANIFEST_PARSED, function() {
       console.log('Manifest parsed!');
     });
 
-    window.addEventListener('offline', function() {
-      if (!video.paused) {
-        video.pause();
-        hls.stopLoad();
-      }
-    });
   </script>
 </body>
 </html>
