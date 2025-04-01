@@ -35,6 +35,7 @@
     hls.attachMedia(video);
     const stationList = document.getElementById('station-list');
     const anchors = stationList.querySelectorAll('a');
+    const title = anchors[index].id; // Use the ID as the title
     let currentStationIndex = -1;
 
     anchors.forEach((anchor, index) => {
@@ -48,7 +49,6 @@
     function playStation(index) {
       if (index >= 0 && index < anchors.length) {
         const url = anchors[index].href;
-        const title = anchors[index].id; // Use the ID as the title
         hls.loadSource(url);
         setTimeout(() => {
           video.play();
