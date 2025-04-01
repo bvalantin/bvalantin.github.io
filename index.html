@@ -39,6 +39,20 @@
     const anchors = stationList.querySelectorAll('a');
     let currentStationIndex = -1;
 
+    // Function to play a station
+function playStation(index) {
+  if (index >= 0 && index < anchors.length) {
+    const url = anchors[index].href;
+    hls.loadSource(url);
+    setTimeout(() => {
+      video.play();
+    }, 500);
+    currentStationIndex = index;
+    document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
+    updateBluetoothMetadata(); // Update metadata when station changes
+  }
+}
+
     // Event listener for station links
     anchors.forEach((anchor, index) => {
       anchor.addEventListener('click', (event) => {
@@ -47,19 +61,7 @@
       });
     });
 
-        // Function to play a station
-    function playStation(index) {
-      if (index >= 0 && index < anchors.length) {
-        const url = anchors[index].href;
-        hls.loadSource(url);
-        setTimeout(() => {
-          video.play();
-        }, 500);
-        currentStationIndex = index;
-        document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
-        updateBluetoothMetadata(); // Update metadata when station changes
-      }
-    }
+
 
     // Bluetooth metadata update function
     function updateBluetoothMetadata() {
