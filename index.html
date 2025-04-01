@@ -37,9 +37,7 @@
     const video = document.getElementById('my-video');
     hls.attachMedia(video);
 
-    const stationList = document.getElementById('station-list');
-    const anchors = stationList.querySelectorAll('a');
-    let currentStationIndex = -1;
+    const anchors = document.querySelectorAll('a');
 
     // Event listener for station links
     anchors.forEach((anchor, index) => {
