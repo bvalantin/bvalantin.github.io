@@ -11,13 +11,18 @@
 #my-video {
   display: none;
 }
+button {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
 </style>
 </head>
 
 <body>
 
   <!-- Message to display metadata -->
-  <p id="metadataMessage">Now playing: v1.3: </p>
+  <p id="metadataMessage">Now playing: v1.4: </p>
 
   <!-- Station list-->
   <ul id="station-list">
@@ -29,6 +34,9 @@
     <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
   </ul>
 
+  <!-- Pause/Play Button -->
+  <button id="playPauseButton">Play</button>
+
   <!-- Video player -->
   <video id="my-video" controls playsinline></video>
 
@@ -39,6 +47,8 @@
 
     const anchors = document.querySelectorAll('a');
     let currentIndex = -1; // Keeps track of the current station index
+
+    const playPauseButton = document.getElementById('playPauseButton');
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -80,6 +90,9 @@
 
         // Update current index
         currentIndex = index;
+
+        // Update Play/Pause button text
+        playPauseButton.textContent = "Pause";
       }
     }
 
@@ -101,6 +114,26 @@
         event.preventDefault();
         playStation(index);
       });
+    });
+
+    // Event listener for Play/Pause button
+    playPauseButton.addEventListener('click', () => {
+      if (video.paused) {
+        video.play();
+        playPauseButton.textContent = "Pause";
+      } else {
+        video.pause();
+        playPauseButton.textContent = "Play";
+      }
+    });
+
+    // Update Play/Pause button state when playback is paused or resumed
+    video.addEventListener('play', () => {
+      playPauseButton.textContent = "Pause";
+    });
+
+    video.addEventListener('pause', () => {
+      playPauseButton.textContent = "Play";
     });
   </script>
 </body>
