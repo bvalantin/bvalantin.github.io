@@ -39,18 +39,40 @@
 
     const anchors = document.querySelectorAll('a');
 
+    // Function to update Media Session metadata
+    function updateMediaSessionMetadata(title, artist, album, artwork) {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title,
+          artist: artist,
+          album: album,
+          artwork: [
+            { src: artwork, sizes: '512x512', type: 'image/png' }
+          ]
+        });
+
+        // Set action handlers (optional)
+        navigator.mediaSession.setActionHandler('play', () => video.play());
+        navigator.mediaSession.setActionHandler('pause', () => video.pause());
+      }
+    }
+
     // Event listener for station links
     anchors.forEach((anchor) => {
       anchor.addEventListener('click', (event) => {
         event.preventDefault();
         const url = event.target.href;
-        const radiotitle=event.target.id;
+        const radiotitle = event.target.id;
         hls.loadSource(url);
         setTimeout(() => {
           video.play();
         }, 500);
+
+        // Update metadata message
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
 
+        // Update Media Session metadata
+        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://dummyimage.com/512x512/000/fff.png");
       });
     });
 
