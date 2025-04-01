@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radio France Streamers</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.2/dist/hls.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
+<style>
+    /* Existing styles... */
+</style>
+</head>
+
+<body>
+
+  <!-- Message to display metadata -->
+  <p id="metadataMessage">Now playing: </p>
+
+  <!-- Station list-->
+  <ul id="station-list">
+    <li><a id="france-inter" href="https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose">France Inter</a></li>
+    <li><a id="franceinfo" href="https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose">Franceinfo</a></li>
+    <li><a id="france-culture" href="https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose">France Culture</a></li>
+    <li><a id="france-musique" href="https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose">France Musique</a></li>
+    <li><a id="fipRock" href="https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose">FIP Rock</a></li>
+    <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
+  </ul>
+
+  <!-- Video player -->
+  <video id="my-video" controls playsinline></video>
+
+  <script>
+    const hls = new Hls();
+    const video = document.getElementById('my-video');
+    hls.attachMedia(video);
+
+    const stationList = document.getElementById('station-list');
+    const anchors = stationList.querySelectorAll('a');
+    let currentStationIndex = -1;
+
+    // Function to play a station
+function playStation(index) {
+  if (index >= 0 && index < anchors.length) {
+    const url = anchors[index].href;
+    hls.loadSource(url);
+    setTimeout(() => {
+      video.play();
+    }, 500);
+    currentStationIndex = index;
+    document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
+    updateBluetoothMetadata(); // Update metadata when station changes
+  }
+}
+
+    // Event listener for station links
+    anchors.forEach((anchor, index) => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        playStation(index);
+      });
+    });
+
+
+
+    // Bluetooth metadata update function
+    function updateBluetoothMetadata() {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: anchors[currentStationIndex]?.textContent || 'Radio',
+          artist: 'Radio France',
+          album: 'Live Stream',
+        });
+      }
+    }
+
+    // Handle media key actions using MediaSession API
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => video.play());
+      navigator.mediaSession.setActionHandler('pause', () => video.pause());
+
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        let nextIndex = currentStationIndex + 1;
+        if (nextIndex >= anchors.length) nextIndex = 0; // Wrap around to the first station
+        playStation(nextIndex);
+      });
+
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        let prevIndex = currentStationIndex - 1;
+        if (prevIndex < 0) prevIndex = anchors.length - 1; // Wrap around to the last station
+        playStation(prevIndex);
+      });
+    }
+
+    video.addEventListener('loadedmetadata', updateBluetoothMetadata);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => console.log('Manifest parsed!'));
+
+  </script>
+</body>
+</html>
