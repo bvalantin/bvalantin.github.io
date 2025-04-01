@@ -56,7 +56,7 @@ function playStation(index) {
     hls.loadSource(url);
     setTimeout(() => {
       video.play();
-    }, 2000);
+    }, 500);
     currentStationIndex = index;
     document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
     updateBluetoothMetadata(); // Update metadata when station changes
