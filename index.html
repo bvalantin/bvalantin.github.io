@@ -9,6 +9,14 @@
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
   <style>
     /* Existing styles... */
+    #controls {
+      margin-top: 20px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -26,26 +34,25 @@
     <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
   </ul>
 
+  <!-- Video player -->
   <video id="my-video" controls playsinline></video>
+
+  <!-- Controls for next/previous track -->
+  <div id="controls">
+    <button id="prev-track">Previous Track</button>
+    <button id="next-track">Next Track</button>
+  </div>
 
   <script>
     const hls = new Hls();
-    const title = "Radio"
     const video = document.getElementById('my-video');
     hls.attachMedia(video);
+
     const stationList = document.getElementById('station-list');
     const anchors = stationList.querySelectorAll('a');
     let currentStationIndex = -1;
 
-    anchors.forEach((anchor, index) => {
-      anchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        playStation(index);
-        const title = event.target.id; // Use the ID as the title
-      });
-    });
-
-    // Function to stream radio station using hls library
+    // Function to play a station
     function playStation(index) {
       if (index >= 0 && index < anchors.length) {
         const url = anchors[index].href;
@@ -54,41 +61,65 @@
           video.play();
         }, 500);
         currentStationIndex = index;
+        document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
       }
     }
 
-    // Function to update metadata
+    // Event listener for station links
+    anchors.forEach((anchor, index) => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        playStation(index);
+      });
+    });
+
+    // Event listener for "Next Track" button
+    document.getElementById('next-track').addEventListener('click', () => {
+      let nextIndex = currentStationIndex + 1;
+      if (nextIndex >= anchors.length) {
+        nextIndex = 0; // Wrap around to the first station
+      }
+      playStation(nextIndex);
+    });
+
+    // Event listener for "Previous Track" button
+    document.getElementById('prev-track').addEventListener('click', () => {
+      let prevIndex = currentStationIndex - 1;
+      if (prevIndex < 0) {
+        prevIndex = anchors.length - 1; // Wrap around to the last station
+      }
+      playStation(prevIndex);
+    });
+
+    // Bluetooth metadata update function
     function updateBluetoothMetadata() {
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: title, // Set the title from the ID        title: "Song Title",
-          artist: title,
-          album: title,
+          title: anchors[currentStationIndex]?.textContent || 'Radio',
+          artist: 'Radio France',
+          album: 'Live Stream',
         });
       }
-
     }
 
-    // Event listener for loaded metadata
-    video.addEventListener('loadedmetadata', () => {
-      console.log("Metadata loaded");
-      updateBluetoothMetadata();
-    });
+    video.addEventListener('loadedmetadata', updateBluetoothMetadata);
 
-    // Handle play/pause actions from Bluetooth device
-if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('play', () => {
-    video.play();
-  });
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => video.play());
+      navigator.mediaSession.setActionHandler('pause', () => video.pause());
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        let nextIndex = currentStationIndex + 1;
+        if (nextIndex >= anchors.length) nextIndex = 0;
+        playStation(nextIndex);
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        let prevIndex = currentStationIndex - 1;
+        if (prevIndex < 0) prevIndex = anchors.length - 1;
+        playStation(prevIndex);
+      });
+    }
 
-  navigator.mediaSession.setActionHandler('pause', () => {
-    video.pause();
-  });
-}
-
-    hls.on(Hls.Events.MANIFEST_PARSED, function() {
-      console.log('Manifest parsed!');
-    });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => console.log('Manifest parsed!'));
 
   </script>
 </body>
