@@ -15,7 +15,7 @@
 <body>
 
   <!-- Message to display metadata -->
-  <p id="metadataMessage">Now playing: v0.1: </p>
+  <p id="metadataMessage">Now playing: v0.2: </p>
 
   <!-- Station list-->
   <ul id="station-list">
@@ -39,6 +39,14 @@
     const anchors = stationList.querySelectorAll('a');
     let currentStationIndex = -1;
 
+    // Event listener for station links
+    anchors.forEach((anchor, index) => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        playStation(index);
+      });
+    });
+
     // Function to play a station
 function playStation(index) {
   if (index >= 0 && index < anchors.length) {
@@ -52,16 +60,6 @@ function playStation(index) {
     updateBluetoothMetadata(); // Update metadata when station changes
   }
 }
-
-    // Event listener for station links
-    anchors.forEach((anchor, index) => {
-      anchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        playStation(index);
-      });
-    });
-
-
 
     // Bluetooth metadata update function
     function updateBluetoothMetadata() {
