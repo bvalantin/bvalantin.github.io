@@ -48,7 +48,7 @@
         }, 500);
         currentStationIndex = index;
         document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
-        //updateBluetoothMetadata(); // Update metadata when station changes
+//        updateBluetoothMetadata(); // Update metadata when station changes
       }
     }
 
@@ -61,15 +61,15 @@
     });
 
     // Bluetooth metadata update function
-    function updateBluetoothMetadata() {
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: anchors[currentStationIndex]?.textContent || 'Radio',
-          artist: 'Radio France',
-          album: 'Live Stream',
-        });
-      }
-    }
+//    function updateBluetoothMetadata() {
+//      if ('mediaSession' in navigator) {
+//        navigator.mediaSession.metadata = new MediaMetadata({
+//          title: anchors[currentStationIndex]?.textContent || 'Radio',
+//          artist: 'Radio France',
+//          album: 'Live Stream',
+//        });
+//      }
+//    }
 
     // Handle media key actions using MediaSession API
     if ('mediaSession' in navigator) {
