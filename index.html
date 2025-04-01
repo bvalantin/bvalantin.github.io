@@ -62,6 +62,10 @@
           ]
         });
       }
+
+      // Display metadata to the user
+      const metadataMessage = document.getElementById('metadataMessage');
+      metadataMessage.textContent = `Now playing: ${title}`;
     }
 
     // Event listener for loaded metadata
