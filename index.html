@@ -22,7 +22,7 @@ button {
 <body>
 
   <!-- Message to display metadata -->
-  <p id="metadataMessage"> Radio France Player v1.5: </p>
+  <p id="metadataMessage">Radio France player v1.4: </p>
 
   <!-- Station list-->
   <ul id="station-list">
@@ -34,8 +34,8 @@ button {
     <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
   </ul>
 
-  <!-- Stop/Play Button -->
-  <button id="playStopButton">Play</button>
+  <!-- Pause/Play Button -->
+  <button id="playPauseButton">Play</button>
 
   <!-- Video player -->
   <video id="my-video" controls playsinline></video>
@@ -47,9 +47,8 @@ button {
 
     const anchors = document.querySelectorAll('a');
     let currentIndex = -1; // Keeps track of the current station index
-    let isStopped = true; // Tracks whether playback is stopped
 
-    const playStopButton = document.getElementById('playStopButton');
+    const playPauseButton = document.getElementById('playPauseButton');
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -64,8 +63,8 @@ button {
         });
 
         // Set action handlers
-        navigator.mediaSession.setActionHandler('play', () => playCurrentStation());
-        navigator.mediaSession.setActionHandler('pause', () => stopPlayback());
+        navigator.mediaSession.setActionHandler('play', () => video.play());
+        navigator.mediaSession.setActionHandler('pause', () => video.pause());
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
       }
@@ -81,8 +80,6 @@ button {
         hls.loadSource(url);
         setTimeout(() => {
           video.play();
-          isStopped = false;
-          playStopButton.textContent = "Stop";
         }, 500);
 
         // Update metadata message
@@ -93,6 +90,9 @@ button {
 
         // Update current index
         currentIndex = index;
+
+        // Update Play/Pause button text
+        playPauseButton.textContent = "Pause";
       }
     }
 
@@ -108,25 +108,6 @@ button {
       playStation(previousIndex);
     }
 
-    // Function to stop playback
-    function stopPlayback() {
-      video.pause();
-      video.currentTime = 0; // Reset playback position
-      isStopped = true;
-      playStopButton.textContent = "Play";
-    }
-
-    // Function to play the current station (reload stream if stopped)
-    function playCurrentStation() {
-      if (isStopped && currentIndex >= 0) {
-        playStation(currentIndex); // Reload and start playing the current station
-      } else {
-        video.play();
-        isStopped = false;
-        playStopButton.textContent = "Stop";
-      }
-    }
-
     // Event listener for station links
     anchors.forEach((anchor, index) => {
       anchor.addEventListener('click', (event) => {
@@ -135,25 +116,24 @@ button {
       });
     });
 
-    // Event listener for Play/Stop button
-    playStopButton.addEventListener('click', () => {
-      if (isStopped) {
-        playCurrentStation();
+    // Event listener for Play/Pause button
+    playPauseButton.addEventListener('click', () => {
+      if (video.paused) {
+        video.play();
+        playPauseButton.textContent = "Pause";
       } else {
-        stopPlayback();
+        video.pause();
+        playPauseButton.textContent = "Play";
       }
     });
 
-    // Update Play/Stop button state when playback is paused or resumed
+    // Update Play/Pause button state when playback is paused or resumed
     video.addEventListener('play', () => {
-      isStopped = false;
-      playStopButton.textContent = "Stop";
+      playPauseButton.textContent = "Pause";
     });
 
     video.addEventListener('pause', () => {
-      if (!isStopped) {
-        stopPlayback();
-      }
+      playPauseButton.textContent = "Play";
     });
   </script>
 </body>
