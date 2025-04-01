@@ -43,7 +43,12 @@
     anchors.forEach((anchor, index) => {
       anchor.addEventListener('click', (event) => {
         event.preventDefault();
-        playStation(index);
+        const url = event.target.href;
+        hls.loadSource(url);
+        setTimeout(() => {
+          video.play();
+        }, 500);
+//        playStation(index);
       });
     });
 
