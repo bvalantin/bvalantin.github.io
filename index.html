@@ -15,6 +15,7 @@
 <body>
 
   <!-- Message to display metadata -->
+  <p id="unsupported-message">Your browser or device does not support metadata
   <p id="metadataMessage">Now playing: </p>
 
   <!-- Station list-->
@@ -61,7 +62,13 @@
       }
     }
 
-
+    // Check if navigator.mediaSession is available
+    if (!('mediaSession' in navigator)) {
+      // Display the unsupported message
+      document.getElementById('unsupported-message').style.display = 'block';
+    } else {
+      console.log("Metadata transfer supported.");
+    }
 
     // Bluetooth metadata update function
     function updateBluetoothMetadata() {
