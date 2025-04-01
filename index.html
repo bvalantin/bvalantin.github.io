@@ -30,6 +30,7 @@
 
   <script>
     const hls = new Hls();
+    const title = "Radio"
     const video = document.getElementById('my-video');
     hls.attachMedia(video);
     const stationList = document.getElementById('station-list');
@@ -54,9 +55,6 @@
         }, 500);
         currentStationIndex = index;
       }
-      // Display metadata to the user
-      const metadataMessage = document.getElementById('metadataMessage');
-      metadataMessage.textContent = `Now playing: ${title}`;
     }
 
     // Function to update metadata
