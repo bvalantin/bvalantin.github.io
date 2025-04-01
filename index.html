@@ -50,9 +50,16 @@
           video.play();
         }, 500);
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: anchors[currentStationIndex]?.textContent || 'Radio',
+            artist: 'Radio France',
+            album: 'Live Stream',
+          });
+        }
+      }
+    }
 
-      });
-    });
 
   </script>
 </body>
