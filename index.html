@@ -17,7 +17,7 @@
 <body>
 
   <!-- Message to display metadata -->
-  <p id="metadataMessage">Now playing: v1.2: </p>
+  <p id="metadataMessage">Now playing: v1.1: </p>
 
   <!-- Station list-->
   <ul id="station-list">
@@ -38,6 +38,7 @@
     hls.attachMedia(video);
 
     const anchors = document.querySelectorAll('a');
+    let currentIndex = -1; // Keeps track of the current station index
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -51,18 +52,21 @@
           ]
         });
 
-        // Set action handlers (optional)
+        // Set action handlers
         navigator.mediaSession.setActionHandler('play', () => video.play());
         navigator.mediaSession.setActionHandler('pause', () => video.pause());
+        navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
+        navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
       }
     }
 
-    // Event listener for station links
-    anchors.forEach((anchor) => {
-      anchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        const url = event.target.href;
-        const radiotitle = event.target.id;
+    // Function to play a station by index
+    function playStation(index) {
+      if (index >= 0 && index < anchors.length) {
+        const anchor = anchors[index];
+        const url = anchor.href;
+        const radiotitle = anchor.id;
+
         hls.loadSource(url);
         setTimeout(() => {
           video.play();
@@ -73,9 +77,31 @@
 
         // Update Media Session metadata
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://dummyimage.com/512x512/000/fff.png");
+
+        // Update current index
+        currentIndex = index;
+      }
+    }
+
+    // Function to play the next station
+    function playNextStation() {
+      const nextIndex = (currentIndex + 1) % anchors.length; // Wrap around to the first station
+      playStation(nextIndex);
+    }
+
+    // Function to play the previous station
+    function playPreviousStation() {
+      const previousIndex = (currentIndex - 1 + anchors.length) % anchors.length; // Wrap around to the last station
+      playStation(previousIndex);
+    }
+
+    // Event listener for station links
+    anchors.forEach((anchor, index) => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        playStation(index);
       });
     });
-
   </script>
 </body>
 </html>
