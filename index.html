@@ -17,7 +17,7 @@
 <body>
 
   <!-- Message to display metadata -->
-  <p id="metadataMessage">Now playing: v1: </p>
+  <p id="metadataMessage">Now playing: v1.1: </p>
 
   <!-- Station list-->
   <ul id="station-list">
@@ -49,7 +49,8 @@
         setTimeout(() => {
           video.play();
         }, 500);
-//        playStation(index);
+        document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
+
       });
     });
 
