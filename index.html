@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Radio France Streamers</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.2/dist/hls.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -21,21 +23,24 @@
   <a id="pause-button" href="#">Pause/play ([0])</a>
 
   <video id="my-video" controls playsinline></video>
-  <div class="columns">
-    <div class="column" id="column1"></div>
-    <div class="column" id="column2"></div>
-    <div class="column" id="column3"></div>
-    <div class="column" id="column4"></div>
-  </div>
+
   <script>
     const hls = new Hls();
     const video = document.getElementById('my-video');
     hls.attachMedia(video);
-
     const stationList = document.getElementById('station-list');
+    const title = stationList.id; // Use the ID as the title
     const anchors = stationList.querySelectorAll('a');
     let currentStationIndex = -1;
 
+    anchors.forEach((anchor, index) => {
+      anchor.addEventListener('click', (event) => {
+        event.preventDefault();
+        playStation(index);
+      });
+    });
+
+    // Function to stream radio station using hls library
     function playStation(index) {
       if (index >= 0 && index < anchors.length) {
         const url = anchors[index].href;
@@ -47,34 +52,37 @@
       }
     }
 
-    anchors.forEach((anchor, index) => {
-      anchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        playStation(index);
-      });
+    // Function to update metadata
+    function updateBluetoothMetadata() {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title, // Set the title from the ID        title: "Song Title",
+          artist: title,
+          album: title,
+          ]
+        });
+      }
+    }
+
+    // Event listener for loaded metadata
+    video.addEventListener('loadedmetadata', () => {
+      console.log("Metadata loaded");
+      updateBluetoothMetadata();
     });
 
-    document.getElementById('pause-button').addEventListener('click', (event) => {
-      event.preventDefault();
-      video.paused ? video.play() : video.pause();
-    });
+    // Handle play/pause actions from Bluetooth device
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('play', () => {
+    video.play();
+  });
 
-    // Keystroke monitoring
-    document.addEventListener('keydown', (event) => {
-      switch (event.key) {
-        case '0':
-          video.paused ? video.play() : video.pause();
-          break;
-        case 'MediaTrackNext':
-        case 'ArrowRight':
-          playStation(currentStationIndex + 1);
-          break;
-        case 'MediaTrackPrevious':
-        case 'ArrowLeft':
-          playStation(currentStationIndex - 1);
-          break;
-      }0
-    });
+  navigator.mediaSession.setActionHandler('pause', () => {
+    video.pause();
+  });
+}
+
+
+
 
     hls.on(Hls.Events.MANIFEST_PARSED, function() {
       console.log('Manifest parsed!');
