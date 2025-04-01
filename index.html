@@ -40,7 +40,7 @@
     const anchors = document.querySelectorAll('a');
 
     // Event listener for station links
-    anchors.forEach((anchor, index) => {
+    anchors.forEach((anchor) => {
       anchor.addEventListener('click', (event) => {
         event.preventDefault();
         const url = event.target.href;
@@ -51,53 +51,6 @@
 //        playStation(index);
       });
     });
-
-    // Function to play a station
-function playStation(index) {
-  if (index >= 0 && index < anchors.length) {
-    const url = anchors[index].href;
-    hls.loadSource(url);
-    setTimeout(() => {
-      video.play();
-    }, 500);
-    currentStationIndex = index;
-    document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
-    updateBluetoothMetadata(); // Update metadata when station changes
-  }
-}
-
-    // Bluetooth metadata update function
-    function updateBluetoothMetadata() {
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: anchors[currentStationIndex]?.textContent || 'Radio',
-          artist: 'Radio France',
-          album: 'Live Stream',
-        });
-      }
-    }
-
-    // Handle media key actions using MediaSession API
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => video.play());
-      navigator.mediaSession.setActionHandler('pause', () => video.pause());
-
-      navigator.mediaSession.setActionHandler('nexttrack', () => {
-        let nextIndex = currentStationIndex + 1;
-        if (nextIndex >= anchors.length) nextIndex = 0; // Wrap around to the first station
-        playStation(nextIndex);
-      });
-
-      navigator.mediaSession.setActionHandler('previoustrack', () => {
-        let prevIndex = currentStationIndex - 1;
-        if (prevIndex < 0) prevIndex = anchors.length - 1; // Wrap around to the last station
-        playStation(prevIndex);
-      });
-    }
-
-    video.addEventListener('loadedmetadata', updateBluetoothMetadata);
-
-    hls.on(Hls.Events.MANIFEST_PARSED, () => console.log('Manifest parsed!'));
 
   </script>
 </body>
