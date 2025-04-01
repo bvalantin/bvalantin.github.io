@@ -25,7 +25,6 @@
     <li><a id="fipRock" href="https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose">FIP Rock</a></li>
     <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
   </ul>
-  <a id="pause-button" href="#">Pause/play ([0])</a>
 
   <video id="my-video" controls playsinline></video>
 
@@ -35,13 +34,13 @@
     hls.attachMedia(video);
     const stationList = document.getElementById('station-list');
     const anchors = stationList.querySelectorAll('a');
-    const title = anchors[index].id; // Use the ID as the title
     let currentStationIndex = -1;
 
     anchors.forEach((anchor, index) => {
       anchor.addEventListener('click', (event) => {
         event.preventDefault();
         playStation(index);
+        const title = anchors[index].id; // Use the ID as the title
       });
     });
 
