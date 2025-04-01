@@ -9,14 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
   <style>
     /* Existing styles... */
-    #controls {
-      margin-top: 20px;
-    }
-    button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 16px;
-    }
   </style>
 </head>
 <body>
@@ -37,12 +29,6 @@
   <!-- Video player -->
   <video id="my-video" controls playsinline></video>
 
-  <!-- Controls for next/previous track -->
-  <div id="controls">
-    <button id="prev-track">Previous Track</button>
-    <button id="next-track">Next Track</button>
-  </div>
-
   <script>
     const hls = new Hls();
     const video = document.getElementById('my-video');
@@ -62,6 +48,7 @@
         }, 500);
         currentStationIndex = index;
         document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
+        updateBluetoothMetadata(); // Update metadata when station changes
       }
     }
 
@@ -71,24 +58,6 @@
         event.preventDefault();
         playStation(index);
       });
-    });
-
-    // Event listener for "Next Track" button
-    document.getElementById('next-track').addEventListener('click', () => {
-      let nextIndex = currentStationIndex + 1;
-      if (nextIndex >= anchors.length) {
-        nextIndex = 0; // Wrap around to the first station
-      }
-      playStation(nextIndex);
-    });
-
-    // Event listener for "Previous Track" button
-    document.getElementById('prev-track').addEventListener('click', () => {
-      let prevIndex = currentStationIndex - 1;
-      if (prevIndex < 0) {
-        prevIndex = anchors.length - 1; // Wrap around to the last station
-      }
-      playStation(prevIndex);
     });
 
     // Bluetooth metadata update function
@@ -102,22 +71,25 @@
       }
     }
 
-    video.addEventListener('loadedmetadata', updateBluetoothMetadata);
-
+    // Handle media key actions using MediaSession API
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => video.play());
       navigator.mediaSession.setActionHandler('pause', () => video.pause());
+
       navigator.mediaSession.setActionHandler('nexttrack', () => {
         let nextIndex = currentStationIndex + 1;
-        if (nextIndex >= anchors.length) nextIndex = 0;
+        if (nextIndex >= anchors.length) nextIndex = 0; // Wrap around to the first station
         playStation(nextIndex);
       });
+
       navigator.mediaSession.setActionHandler('previoustrack', () => {
         let prevIndex = currentStationIndex - 1;
-        if (prevIndex < 0) prevIndex = anchors.length - 1;
+        if (prevIndex < 0) prevIndex = anchors.length - 1; // Wrap around to the last station
         playStation(prevIndex);
       });
     }
+
+    video.addEventListener('loadedmetadata', updateBluetoothMetadata);
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => console.log('Manifest parsed!'));
 
