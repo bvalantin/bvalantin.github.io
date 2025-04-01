@@ -8,7 +8,6 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
 <style>
-/* Hide the video element completely */
 #my-video {
   display: none;
 }
@@ -57,7 +56,7 @@ function playStation(index) {
     hls.loadSource(url);
     setTimeout(() => {
       video.play();
-    }, 500);
+    }, 2000);
     currentStationIndex = index;
     document.getElementById('metadataMessage').textContent = `Now playing: ${anchors[index].textContent}`;
     updateBluetoothMetadata(); // Update metadata when station changes
