@@ -12,8 +12,10 @@
   </style>
 </head>
 <body>
+
   <!-- Message to display metadata -->
   <p id="metadataMessage">Now playing: </p>
+
   <!-- Station list-->
   <ul id="station-list">
     <li><a id="france-inter" href="https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose">France Inter</a></li>
@@ -53,6 +55,9 @@
         }, 500);
         currentStationIndex = index;
       }
+      // Display metadata to the user
+      const metadataMessage = document.getElementById('metadataMessage');
+      metadataMessage.textContent = `Now playing: ${title}`;
     }
 
     // Function to update metadata
@@ -65,9 +70,6 @@
         });
       }
 
-      // Display metadata to the user
-      const metadataMessage = document.getElementById('metadataMessage');
-      metadataMessage.textContent = `Now playing: ${title}`;
     }
 
     // Event listener for loaded metadata
