@@ -7,16 +7,17 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.2/dist/hls.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
-<style>
-#my-video {
-  display: none;
-}
-button {
-  margin: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-}
-</style>
+  <style>
+    /* Hide the video element completely */
+    #my-video {
+      display: none;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 
 <body>
@@ -136,37 +137,18 @@ button {
       playPauseButton.textContent = "Play";
     });
 
+    // Key event listener
     document.addEventListener('keydown', (event) => {
       if (event.key === '0') {
         video.paused ? video.play() : video.pause();
       }
       if (event.key === 'ArrowRight') {
-        const anchors = document.querySelectorAll('a');
-        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
-        const nextAnchor = anchors[(currentIndex + 1) % anchors.length];
-        nextAnchor.click();
+        playNextStation();
       }
       if (event.key === 'ArrowLeft') {
-        const anchors = document.querySelectorAll('a');
-        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
-        const prevAnchor = anchors[currentIndex - 1] || anchors[anchors.length - 1];
-        prevAnchor.click();
-      }
-      if (event.keyCode === 16) { // Previous track (Back button)
-        const anchors = document.querySelectorAll('a');
-        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
-        const prevAnchor = anchors[currentIndex - 1] || anchors[anchors.length - 1];
-        prevAnchor.click();
-      }
-      if (event.keyCode === 17) { // Next track (Forward button)
-        const anchors = document.querySelectorAll('a');
-        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
-        const nextAnchor = anchors[(currentIndex + 1) % anchors.length];
-        nextAnchor.click();
+        playPreviousStation();
       }
     });
-
-
   </script>
 </body>
 </html>
