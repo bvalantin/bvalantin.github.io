@@ -135,6 +135,38 @@ button {
     video.addEventListener('pause', () => {
       playPauseButton.textContent = "Play";
     });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === '0') {
+        video.paused ? video.play() : video.pause();
+      }
+      if (event.key === 'ArrowRight') {
+        const anchors = document.querySelectorAll('a');
+        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
+        const nextAnchor = anchors[(currentIndex + 1) % anchors.length];
+        nextAnchor.click();
+      }
+      if (event.key === 'ArrowLeft') {
+        const anchors = document.querySelectorAll('a');
+        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
+        const prevAnchor = anchors[currentIndex - 1] || anchors[anchors.length - 1];
+        prevAnchor.click();
+      }
+      if (event.keyCode === 16) { // Previous track (Back button)
+        const anchors = document.querySelectorAll('a');
+        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
+        const prevAnchor = anchors[currentIndex - 1] || anchors[anchors.length - 1];
+        prevAnchor.click();
+      }
+      if (event.keyCode === 17) { // Next track (Forward button)
+        const anchors = document.querySelectorAll('a');
+        const currentIndex = anchors.findIndex((anchor) => anchor.id === video.currentSrc.match(/#(.*?)\.m3u8/)[1]);
+        const nextAnchor = anchors[(currentIndex + 1) % anchors.length];
+        nextAnchor.click();
+      }
+    });
+
+
   </script>
 </body>
 </html>
