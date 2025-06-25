@@ -37,7 +37,44 @@
       padding: 0 10px; /* Padding for text */
       box-sizing: border-box;
     }
-    #station-list {
+    .page-navigation {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .page-button {
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      outline: none;
+    }
+    .page-button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+    }
+    .page-button.active {
+      background-color: #0056b3;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      transform: translateY(0);
+    }
+    .station-section {
+      width: 100%;
+      max-width: 320px; /* Constrain max width for very small screens, e.g., 240-320px wide */
+      box-sizing: border-box;
+      display: none; /* Hidden by default */
+    }
+    .station-section.active {
+        display: block; /* Show active section */
+    }
+    #station-list-container {
       list-style: none;
       padding: 0;
       display: flex;
@@ -46,18 +83,15 @@
       gap: 8px; /* Slightly reduced gap between items */
       margin-bottom: 15px; /* Consistent margin */
       width: 100%; /* Ensure list takes full width */
-      max-width: 320px; /* Constrain max width for very small screens, e.g., 240-320px wide */
-      box-sizing: border-box;
     }
-    #station-list li {
+    #station-list-container li {
       background-color: #ffffff;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       flex-basis: 48%; /* Roughly half width for two columns on wider mobile screens */
-      /* For very small screens, this will be overridden by the media query */
     }
-    #station-list a {
+    #station-list-container a {
       display: block;
       padding: 10px 15px; /* Slightly reduced padding for links */
       text-decoration: none;
@@ -68,7 +102,7 @@
       border-radius: 8px; /* Rounded corners for links inside li */
       text-align: center; /* Center text within links */
     }
-    #station-list a:hover {
+    #station-list-container a:hover {
       background-color: #e0f0ff;
       transform: translateY(-2px);
     }
@@ -101,18 +135,17 @@
       body {
         padding: 10px; /* Even less padding on very narrow screens */
       }
-      #station-list {
+      #station-list-container {
         flex-direction: column; /* Force single column layout */
         align-items: stretch;
-        max-width: 95%; /* Adjust max-width to fit screen with padding */
       }
-      #station-list li {
+      #station-list-container li {
         flex-basis: 100%; /* Each item takes full width */
       }
       #metadataMessage {
         font-size: 1em; /* Smallest comfortable font size */
       }
-      button {
+      button, .page-button {
         font-size: 0.9em; /* Smaller button text */
         padding: 8px 15px; /* Smaller button padding */
         min-width: 100px;
@@ -121,11 +154,10 @@
 
     /* Adjust for slightly larger phones/tablets (up to 600px) */
     @media (min-width: 321px) and (max-width: 600px) {
-      #station-list li {
+      #station-list-container li {
         flex-basis: 48%; /* Keep two columns if there's enough space */
       }
     }
-
   </style>
 </head>
 
@@ -134,15 +166,18 @@
   <!-- Message to display metadata -->
   <p id="metadataMessage">Radio France player v1.5: Ready to play!</p>
 
-  <!-- Station list-->
-  <ul id="station-list">
-    <li><a id="france-inter" href="https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose">France Inter</a></li>
-    <li><a id="franceinfo" href="https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose">Franceinfo</a></li>
-    <li><a id="france-culture" href="https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose">France Culture</a></li>
-    <li><a id="france-musique" href="https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose">France Musique</a></li>
-    <li><a id="fipRock" href="https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose">FIP Rock</a></li>
-    <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
-  </ul>
+  <!-- Page Navigation Buttons -->
+  <div class="page-navigation">
+    <button id="currentAffairsBtn" class="page-button active">Current Affairs</button>
+    <button id="musicBtn" class="page-button">Music</button>
+  </div>
+
+  <!-- Station List Container -->
+  <div id="stationContent" class="station-section active">
+    <ul id="station-list-container">
+      <!-- Stations will be dynamically loaded here -->
+    </ul>
+  </div>
 
   <!-- Pause/Play Button -->
   <button id="playPauseButton">Play</button>
@@ -155,11 +190,75 @@
     const video = document.getElementById('my-video');
     hls.attachMedia(video);
 
-    const anchors = document.querySelectorAll('a');
-    let currentIndex = -1; // Keeps track of the current station index
-
     const playPauseButton = document.getElementById('playPauseButton');
     const metadataMessage = document.getElementById('metadataMessage');
+    const stationListContainer = document.getElementById('station-list-container');
+    const currentAffairsBtn = document.getElementById('currentAffairsBtn');
+    const musicBtn = document.getElementById('musicBtn');
+    const stationContent = document.getElementById('stationContent');
+
+    let currentIndex = -1; // Keeps track of the current station index within the active list
+    let currentActiveStations = []; // Stores the array of stations currently displayed
+
+    // Define all stations
+    const currentAffairsStations = [
+      { id: "france-inter", name: "France Inter", url: "https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose" },
+      { id: "franceinfo", name: "Franceinfo", url: "https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose" },
+      { id: "france-culture", name: "France Culture", url: "https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose" },
+      { id: "france-musique", name: "France Musique", url: "https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose" },
+    ];
+
+    const musicStations = [
+      { id: "fip", name: "FIP", url: "https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceHeos" },
+      { id: "fipRock", name: "FIP Rock", url: "https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceHeos" },
+      { id: "fipGroove", name: "FIP Groove", url: "https://stream.radiofrance.fr/fipgroove/fipgroove.m3u8?id=radiofranceHeos" },
+      { id: "fipMonde", name: "FIP Monde", url: "https://stream.radiofrance.fr/fipworld/fipworld.m3u8?id=radiofranceHeos" },
+      { id: "fipNouveautes", name: "FIP Nouveautés", url: "https://stream.radiofrance.fr/fipnouveautes/fipnouveautes.m3u8?id=radiofranceHeos" },
+      { id: "fipMetal", name: "FIP Metal", url: "https://stream.radiofrance.fr/fipmetal/fipmetal.m3u8?id=radiofranceHeos" },
+      { id: "fipPop", name: "FIP Pop", url: "https://stream.radiofrance.fr/fippop/fippop.m3u8?id=radiofranceHeos" },
+      { id: "fipHipHop", name: "FIP Hip Hop", url: "https://stream.radiofrance.fr/fiphiphop/fiphiphop.m3u8?id=radiofranceHeos" },
+      { id: "fipSacreFrancais", name: "FIP Sacré Français", url: "https://stream.radiofrance.fr/fipsacrefrancais/fipsacrefrancais.m3u8?id=radiofranceHeos" },
+      { id: "mouv", name: "Mouv’", url: "https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceHeos" },
+      { id: "mouvRnbSoul", name: "Mouv’ R’n’B & Soul", url: "https://stream.radiofrance.fr/mouvrnb/mouvrnb.m3u8?id=radiofranceHeos" },
+      { id: "mouvEnFamille", name: "Mouv’ En famille", url: "https://stream.radiofrance.fr/mouvkidsnfamily/mouvkidsnfamily.m3u8?id=radiofranceHeos" },
+      { id: "mouvSansBlabla", name: "Mouv' Sans Blabla", url: "https://stream.radiofrance.fr/mouvsansblabla/mouvsansblabla.m3u8?id=radiofranceHeos" },
+    ];
+
+    // Function to render stations into the list container
+    function renderStations(stations) {
+      stationListContainer.innerHTML = ''; // Clear existing stations
+      currentActiveStations = stations; // Update the array of currently active stations
+      stations.forEach((station, index) => {
+        const listItem = document.createElement('li');
+        const anchor = document.createElement('a');
+        anchor.id = station.id;
+        anchor.href = station.url;
+        anchor.textContent = station.name;
+        anchor.addEventListener('click', (event) => {
+          event.preventDefault();
+          playStation(index);
+        });
+        listItem.appendChild(anchor);
+        stationListContainer.appendChild(listItem);
+      });
+    }
+
+    // Function to switch pages
+    function showPage(pageType) {
+      if (pageType === 'currentAffairs') {
+        renderStations(currentAffairsStations);
+        currentAffairsBtn.classList.add('active');
+        musicBtn.classList.remove('active');
+      } else if (pageType === 'music') {
+        renderStations(musicStations);
+        musicBtn.classList.add('active');
+        currentAffairsBtn.classList.remove('active');
+      }
+      currentIndex = -1; // Reset current index when switching pages
+      metadataMessage.textContent = `Radio France player v1.5: Ready to play!`;
+      playPauseButton.textContent = "Play";
+      video.pause(); // Pause playback when switching pages
+    }
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -184,17 +283,18 @@
           playPauseButton.textContent = "Play";
           metadataMessage.textContent = `Paused: ${navigator.mediaSession.metadata.title}`;
         });
+        // Ensure these actions always call functions operating on the *current* list
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
       }
     }
 
-    // Function to play a station by index
+    // Function to play a station by index from the currentActiveStations array
     function playStation(index) {
-      if (index >= 0 && index < anchors.length) {
-        const anchor = anchors[index];
-        const url = anchor.href;
-        const radiotitle = anchor.id;
+      if (index >= 0 && index < currentActiveStations.length) {
+        const station = currentActiveStations[index];
+        const url = station.url;
+        const radiotitle = station.name; // Use name for display
 
         hls.loadSource(url);
         hls.on(Hls.Events.MANIFEST_PARSED, function() {
@@ -217,40 +317,35 @@
 
     // Function to play the next station
     function playNextStation() {
-      // If no station is currently playing, start with the first one
+      // If no station is currently playing or no stations in the list, start with the first one
+      if (currentActiveStations.length === 0) return; // No stations to play
       if (currentIndex === -1) {
         playStation(0);
         return;
       }
-      const nextIndex = (currentIndex + 1) % anchors.length; // Wrap around to the first station
+      const nextIndex = (currentIndex + 1) % currentActiveStations.length; // Wrap around
       playStation(nextIndex);
     }
 
     // Function to play the previous station
     function playPreviousStation() {
-        // If no station is currently playing, there's no previous
-        if (currentIndex === -1) {
-            return;
-        }
-      const previousIndex = (currentIndex - 1 + anchors.length) % anchors.length; // Wrap around to the last station
+      // If no station is currently playing or no stations in the list, do nothing
+      if (currentActiveStations.length === 0 || currentIndex === -1) return;
+      const previousIndex = (currentIndex - 1 + currentActiveStations.length) % currentActiveStations.length; // Wrap around
       playStation(previousIndex);
     }
 
-    // Event listener for station links
-    anchors.forEach((anchor, index) => {
-      anchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        playStation(index);
-      });
-    });
+    // Event listeners for page navigation buttons
+    currentAffairsBtn.addEventListener('click', () => showPage('currentAffairs'));
+    musicBtn.addEventListener('click', () => showPage('music'));
 
     // Event listener for Play/Pause button
     playPauseButton.addEventListener('click', () => {
       if (video.paused) {
-        // If no station is selected yet, play the first one
-        if (currentIndex === -1) {
+        // If no station is selected yet or list is empty, try to play the first station of the current list
+        if (currentIndex === -1 && currentActiveStations.length > 0) {
             playStation(0);
-        } else {
+        } else if (currentActiveStations.length > 0) { // Only play if there are stations loaded
             video.play();
         }
         playPauseButton.textContent = "Pause";
@@ -281,22 +376,14 @@
         }
     });
 
-
     // Key event listener for keyboard shortcuts
     document.addEventListener('keydown', (event) => {
-      // Prevent default browser behavior for media keys where applicable
-      // For example, spacebar often scrolls, volume keys might adjust system volume
-      // event.preventDefault() might be too aggressive for common keys like volume on some OS
-      // Only prevent default for specific keys if you want to override their default browser behavior.
-      // For media keys, the browser usually handles them already or passes them to the mediaSession.
-
       switch (event.key) {
         case '0':
-          // Toggle play/pause using the '0' key
           if (video.paused) {
-            if (currentIndex === -1) {
-                playStation(0); // Start playing the first station if nothing is loaded
-            } else {
+            if (currentIndex === -1 && currentActiveStations.length > 0) {
+                playStation(0);
+            } else if (currentActiveStations.length > 0) {
                 video.play();
             }
           } else {
@@ -305,53 +392,45 @@
           break;
         case 'ArrowRight':
         case 'MediaTrackNext':
-          // Play the next station
           playNextStation();
           break;
         case 'ArrowLeft':
         case 'MediaTrackPrevious':
-          // Play the previous station
           playPreviousStation();
           break;
         case 'VolumeDown':
-          // Decrease volume, ensuring it doesn't go below 0
-          video.volume = Math.max(0, video.volume - 0.1); // Decrease by 10%
+          video.volume = Math.max(0, video.volume - 0.1);
           metadataMessage.textContent = `Volume: ${Math.round(video.volume * 100)}%`;
           break;
         case 'VolumeUp':
-          // Increase volume, ensuring it's doesn't go above 1
-          video.volume = Math.min(1, video.volume + 0.1); // Increase by 10%
+          video.volume = Math.min(1, video.volume + 0.1);
           metadataMessage.textContent = `Volume: ${Math.round(video.volume * 100)}%`;
           break;
         case 'MediaPlay':
-          // Play if paused
           if (video.paused) {
-            if (currentIndex === -1) {
+            if (currentIndex === -1 && currentActiveStations.length > 0) {
                 playStation(0);
-            } else {
+            } else if (currentActiveStations.length > 0) {
                 video.play();
             }
           }
           break;
         case 'MediaPause':
-          // Pause if playing
           if (!video.paused) {
             video.pause();
           }
           break;
         case 'MediaStop':
-          // Stop playback (pause and reset if needed)
           video.pause();
-          video.currentTime = 0; // Optionally reset playback to the beginning
+          video.currentTime = 0;
           playPauseButton.textContent = "Play";
           metadataMessage.textContent = "Playback stopped.";
           break;
-        // You can add more cases for other keys if needed
       }
     });
 
-    // Initial state setup if you want to start with a specific station or state
-    // playStation(0); // Uncomment to auto-play the first station on load
+    // Initialize by showing the Current Affairs page
+    showPage('currentAffairs');
   </script>
 </body>
 </html>
