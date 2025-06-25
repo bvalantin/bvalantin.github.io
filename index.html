@@ -13,22 +13,29 @@
       display: none;
     }
     body {
-      font-family: "Inter", sans-serif; /* Using Inter font */
+      font-family: "Inter", sans-serif; /* Using Inter font for readability */
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start; /* Align to top to give more space for content */
       min-height: 100vh;
       background-color: #f0f4f8; /* Light background */
       color: #333;
-      padding: 20px;
+      padding: 15px; /* Slightly reduced padding for very small screens */
       box-sizing: border-box;
+      width: 100%; /* Ensure body takes full width */
+      max-width: 100%; /* Prevent horizontal scroll on small devices */
+      overflow-x: hidden; /* Prevent horizontal scrolling */
     }
     #metadataMessage {
-      font-size: 1.2em;
-      margin-bottom: 20px;
+      font-size: 1.1em; /* Slightly smaller for small screens */
+      margin-top: 15px; /* Add some margin from the top */
+      margin-bottom: 15px; /* Consistent margin */
       font-weight: bold;
       color: #0056b3;
+      text-align: center; /* Center text */
+      padding: 0 10px; /* Padding for text */
+      box-sizing: border-box;
     }
     #station-list {
       list-style: none;
@@ -36,23 +43,30 @@
       display: flex;
       flex-wrap: wrap; /* Allow wrapping on smaller screens */
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px; /* Slightly reduced gap between items */
+      margin-bottom: 15px; /* Consistent margin */
+      width: 100%; /* Ensure list takes full width */
+      max-width: 320px; /* Constrain max width for very small screens, e.g., 240-320px wide */
+      box-sizing: border-box;
     }
     #station-list li {
       background-color: #ffffff;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       overflow: hidden;
+      flex-basis: 48%; /* Roughly half width for two columns on wider mobile screens */
+      /* For very small screens, this will be overridden by the media query */
     }
     #station-list a {
       display: block;
-      padding: 12px 20px;
+      padding: 10px 15px; /* Slightly reduced padding for links */
       text-decoration: none;
       color: #007bff;
       font-weight: 500;
+      font-size: 0.95em; /* Adjusted font size for links */
       transition: background-color 0.3s ease, transform 0.2s ease;
       border-radius: 8px; /* Rounded corners for links inside li */
+      text-align: center; /* Center text within links */
     }
     #station-list a:hover {
       background-color: #e0f0ff;
@@ -60,37 +74,58 @@
     }
     button {
       margin: 10px;
-      padding: 12px 25px;
-      font-size: 1.1em;
+      padding: 10px 20px; /* Slightly reduced padding for buttons */
+      font-size: 1em; /* Adjusted font size for buttons */
       background-color: #28a745; /* Green for play/pause */
       color: white;
       border: none;
-      border-radius: 25px; /* More rounded button */
+      border-radius: 20px; /* Slightly less rounded button */
       cursor: pointer;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Adjusted shadow */
       transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
       outline: none; /* Remove outline on focus */
+      min-width: 120px; /* Ensure a minimum width for the button */
     }
     button:hover {
       background-color: #218838;
       transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
     }
     button:active {
       transform: translateY(0);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 600px) {
+    /* Responsive adjustments for very small screens (e.g., Nokia 6300 4G) */
+    @media (max-width: 320px) { /* Targeting screens up to 320px width */
+      body {
+        padding: 10px; /* Even less padding on very narrow screens */
+      }
       #station-list {
-        flex-direction: column;
+        flex-direction: column; /* Force single column layout */
         align-items: stretch;
+        max-width: 95%; /* Adjust max-width to fit screen with padding */
       }
       #station-list li {
-        width: 100%;
+        flex-basis: 100%; /* Each item takes full width */
+      }
+      #metadataMessage {
+        font-size: 1em; /* Smallest comfortable font size */
+      }
+      button {
+        font-size: 0.9em; /* Smaller button text */
+        padding: 8px 15px; /* Smaller button padding */
+        min-width: 100px;
       }
     }
+
+    /* Adjust for slightly larger phones/tablets (up to 600px) */
+    @media (min-width: 321px) and (max-width: 600px) {
+      #station-list li {
+        flex-basis: 48%; /* Keep two columns if there's enough space */
+      }
+    }
+
   </style>
 </head>
 
@@ -284,7 +319,7 @@
           metadataMessage.textContent = `Volume: ${Math.round(video.volume * 100)}%`;
           break;
         case 'VolumeUp':
-          // Increase volume, ensuring it doesn't go above 1
+          // Increase volume, ensuring it's doesn't go above 1
           video.volume = Math.min(1, video.volume + 0.1); // Increase by 10%
           metadataMessage.textContent = `Volume: ${Math.round(video.volume * 100)}%`;
           break;
