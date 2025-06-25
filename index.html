@@ -12,10 +12,84 @@
     #my-video {
       display: none;
     }
+    body {
+      font-family: "Inter", sans-serif; /* Using Inter font */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #f0f4f8; /* Light background */
+      color: #333;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #metadataMessage {
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #0056b3;
+    }
+    #station-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap; /* Allow wrapping on smaller screens */
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    #station-list li {
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    #station-list a {
+      display: block;
+      padding: 12px 20px;
+      text-decoration: none;
+      color: #007bff;
+      font-weight: 500;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      border-radius: 8px; /* Rounded corners for links inside li */
+    }
+    #station-list a:hover {
+      background-color: #e0f0ff;
+      transform: translateY(-2px);
+    }
     button {
       margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 12px 25px;
+      font-size: 1.1em;
+      background-color: #28a745; /* Green for play/pause */
+      color: white;
+      border: none;
+      border-radius: 25px; /* More rounded button */
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      outline: none; /* Remove outline on focus */
+    }
+    button:hover {
+      background-color: #218838;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    }
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      #station-list {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      #station-list li {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -23,7 +97,7 @@
 <body>
 
   <!-- Message to display metadata -->
-  <p id="metadataMessage">Radio France player v1.4: </p>
+  <p id="metadataMessage">Radio France player v1.5: Ready to play!</p>
 
   <!-- Station list-->
   <ul id="station-list">
@@ -38,7 +112,7 @@
   <!-- Pause/Play Button -->
   <button id="playPauseButton">Play</button>
 
-  <!-- Video player -->
+  <!-- Video player (hidden, used for HLS audio and Media Session) -->
   <video id="my-video" controls playsinline></video>
 
   <script>
@@ -50,6 +124,7 @@
     let currentIndex = -1; // Keeps track of the current station index
 
     const playPauseButton = document.getElementById('playPauseButton');
+    const metadataMessage = document.getElementById('metadataMessage');
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -63,9 +138,17 @@
           ]
         });
 
-        // Set action handlers
-        navigator.mediaSession.setActionHandler('play', () => video.play());
-        navigator.mediaSession.setActionHandler('pause', () => video.pause());
+        // Set action handlers for external media controls (Bluetooth, OS media keys)
+        navigator.mediaSession.setActionHandler('play', () => {
+          video.play();
+          playPauseButton.textContent = "Pause";
+          metadataMessage.textContent = `Now playing: ${navigator.mediaSession.metadata.title}`;
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          video.pause();
+          playPauseButton.textContent = "Play";
+          metadataMessage.textContent = `Paused: ${navigator.mediaSession.metadata.title}`;
+        });
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
       }
@@ -79,12 +162,12 @@
         const radiotitle = anchor.id;
 
         hls.loadSource(url);
-        setTimeout(() => {
-          video.play();
-        }, 500);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            video.play();
+        });
 
         // Update metadata message
-        document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
+        metadataMessage.textContent = `Now playing: ${radiotitle}`;
 
         // Update Media Session metadata
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectoriel-radio-france.jpg");
@@ -99,12 +182,21 @@
 
     // Function to play the next station
     function playNextStation() {
+      // If no station is currently playing, start with the first one
+      if (currentIndex === -1) {
+        playStation(0);
+        return;
+      }
       const nextIndex = (currentIndex + 1) % anchors.length; // Wrap around to the first station
       playStation(nextIndex);
     }
 
     // Function to play the previous station
     function playPreviousStation() {
+        // If no station is currently playing, there's no previous
+        if (currentIndex === -1) {
+            return;
+        }
       const previousIndex = (currentIndex - 1 + anchors.length) % anchors.length; // Wrap around to the last station
       playStation(previousIndex);
     }
@@ -120,35 +212,111 @@
     // Event listener for Play/Pause button
     playPauseButton.addEventListener('click', () => {
       if (video.paused) {
-        video.play();
+        // If no station is selected yet, play the first one
+        if (currentIndex === -1) {
+            playStation(0);
+        } else {
+            video.play();
+        }
         playPauseButton.textContent = "Pause";
+        if (navigator.mediaSession.metadata) {
+            metadataMessage.textContent = `Now playing: ${navigator.mediaSession.metadata.title}`;
+        }
       } else {
         video.pause();
         playPauseButton.textContent = "Play";
+        if (navigator.mediaSession.metadata) {
+            metadataMessage.textContent = `Paused: ${navigator.mediaSession.metadata.title}`;
+        }
       }
     });
 
     // Update Play/Pause button state when playback is paused or resumed
     video.addEventListener('play', () => {
       playPauseButton.textContent = "Pause";
+      if (navigator.mediaSession.metadata) {
+            metadataMessage.textContent = `Now playing: ${navigator.mediaSession.metadata.title}`;
+        }
     });
 
     video.addEventListener('pause', () => {
       playPauseButton.textContent = "Play";
+      if (navigator.mediaSession.metadata) {
+            metadataMessage.textContent = `Paused: ${navigator.mediaSession.metadata.title}`;
+        }
     });
 
-    // Key event listener
+
+    // Key event listener for keyboard shortcuts
     document.addEventListener('keydown', (event) => {
-      if (event.key === '0') {
-        video.paused ? video.play() : video.pause();
-      }
-      if (event.key === 'ArrowRight') {
-        playNextStation();
-      }
-      if (event.key === 'ArrowLeft') {
-        playPreviousStation();
+      // Prevent default browser behavior for media keys where applicable
+      // For example, spacebar often scrolls, volume keys might adjust system volume
+      // event.preventDefault() might be too aggressive for common keys like volume on some OS
+      // Only prevent default for specific keys if you want to override their default browser behavior.
+      // For media keys, the browser usually handles them already or passes them to the mediaSession.
+
+      switch (event.key) {
+        case '0':
+          // Toggle play/pause using the '0' key
+          if (video.paused) {
+            if (currentIndex === -1) {
+                playStation(0); // Start playing the first station if nothing is loaded
+            } else {
+                video.play();
+            }
+          } else {
+            video.pause();
+          }
+          break;
+        case 'ArrowRight':
+        case 'MediaTrackNext':
+          // Play the next station
+          playNextStation();
+          break;
+        case 'ArrowLeft':
+        case 'MediaTrackPrevious':
+          // Play the previous station
+          playPreviousStation();
+          break;
+        case 'VolumeDown':
+          // Decrease volume, ensuring it doesn't go below 0
+          video.volume = Math.max(0, video.volume - 0.1); // Decrease by 10%
+          metadataMessage.textContent = `Volume: ${Math.round(video.volume * 100)}%`;
+          break;
+        case 'VolumeUp':
+          // Increase volume, ensuring it doesn't go above 1
+          video.volume = Math.min(1, video.volume + 0.1); // Increase by 10%
+          metadataMessage.textContent = `Volume: ${Math.round(video.volume * 100)}%`;
+          break;
+        case 'MediaPlay':
+          // Play if paused
+          if (video.paused) {
+            if (currentIndex === -1) {
+                playStation(0);
+            } else {
+                video.play();
+            }
+          }
+          break;
+        case 'MediaPause':
+          // Pause if playing
+          if (!video.paused) {
+            video.pause();
+          }
+          break;
+        case 'MediaStop':
+          // Stop playback (pause and reset if needed)
+          video.pause();
+          video.currentTime = 0; // Optionally reset playback to the beginning
+          playPauseButton.textContent = "Play";
+          metadataMessage.textContent = "Playback stopped.";
+          break;
+        // You can add more cases for other keys if needed
       }
     });
+
+    // Initial state setup if you want to start with a specific station or state
+    // playStation(0); // Uncomment to auto-play the first station on load
   </script>
 </body>
 </html>
