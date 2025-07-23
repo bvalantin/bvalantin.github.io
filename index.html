@@ -55,7 +55,7 @@
       font-size: 0.9em; /* Further reduced font size */
       margin-bottom: 8px; /* Reduced margin */
       border: none;
-      border-radius: 4px;
+      border-radius: 4ph;
       background-color: #28a745;
       color: white;
       cursor: pointer;
@@ -96,8 +96,8 @@
     </ul>
 
   <div id="page-nav-buttons">
-    <button id="prevPageBtn">&lt; Previous Page</button>
-    <button id="nextPageBtn">Next Page &gt;</button>
+    <button id="prevPageBtn">&lt; Previous Page (4)</button>
+    <button id="nextPageBtn">Next Page (6) &gt;</button>
   </div>
 
   <button id="playPauseButton">Play</button>
@@ -119,9 +119,10 @@
     // All stations data, including which 'page' they belong to
     const allStations = [
       // Page 1 Stations (page: 0) - Removed France Musique, FIP Rock, Mouv'
-      { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0 },
-      { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0 },
-      { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0 },
+      // Added 'cue' property for specific audio cues
+      { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0, cue: 'France Inter cue.mp3' },
+      { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0, cue: 'France info cue.mp3' },
+      { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0, cue: 'France culture cue.mp3' },
       // Page 2 Stations (page: 1) - FIP family and La Musique d'Inter
       { id: 'la-musique-d-inter', name: 'La Musique d\'Inter', url: 'https://stream.radiofrance.fr/franceinterlamusiqueinter/franceinterlamusiqueinter.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip', name: 'FIP', url: 'https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceBose', page: 1 },
@@ -139,9 +140,22 @@
     ];
 
     let currentPage = 0;
-    const maxPage = Math.max(...allStations.map(s => s.page)); // Determine max page number
-    let currentPlayingStationGlobalIndex = -1; // Index in the allStations array
-    let highlightedStationIndexOnPage = 0; // Index in the currently rendered stations
+    const maxPage = Math.max(...allStations.map(s => s.page));
+    let currentPlayingStationGlobalIndex = -1;
+    let highlightedStationIndexOnPage = 0;
+
+    // Howler.js instances for specific cues (if needed, otherwise a single generic cue)
+    // Map station IDs to their Howl instances
+    const stationCues = {};
+    allStations.forEach(station => {
+      if (station.cue) {
+        stationCues[station.id] = new Howl({
+          src: [station.cue],
+          html5: true, // Use HTML5 Audio for better compatibility
+          preload: true // Preload for instant playback
+        });
+      }
+    });
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -155,7 +169,6 @@
           ]
         });
 
-        // Set action handlers for media keys (Bluetooth players, OS media controls)
         navigator.mediaSession.setActionHandler('play', () => {
           video.play();
           playPauseButton.textContent = "Pause";
@@ -166,9 +179,6 @@
         });
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
-
-        // Note: 'volumedown' and 'volumeup' actions are not directly supported by Media Session API.
-        // Volume control is typically handled by the operating system.
       }
     }
 
@@ -179,24 +189,40 @@
         const url = station.url;
         const radiotitle = station.name;
 
-        // If playing a station on a different page, update the display
+        // Pause any currently playing video stream
+        video.pause();
+        hls.destroy(); // Destroy current HLS instance for a clean start
+
+        const cueToPlay = stationCues[station.id];
+
+        if (cueToPlay) {
+          // If there's a specific cue for this station, play it
+          cueToPlay.off('end'); // Remove previous end listener to prevent multiple calls
+          cueToPlay.once('end', () => {
+            // After cue ends, start the live stream
+            hls.loadSource(url);
+            hls.attachMedia(video); // Re-attach media
+            video.play();
+          });
+          cueToPlay.play();
+        } else {
+          // If no specific cue, directly load and play the live stream
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          video.play();
+        }
+
+        // Update display and highlight
         if (station.page !== currentPage) {
           currentPage = station.page;
-          // Find the index of this station within its new page
           const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
           highlightedStationIndexOnPage = stationsOnNewPage.findIndex(s => s.id === station.id);
           renderStationsForPage(currentPage);
         } else {
-            // If on the same page, update the highlight
             const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
             highlightedStationIndexOnPage = stationsOnCurrentPage.findIndex(s => s.id === station.id);
-            updateHighlight(); // Update highlight without re-rendering entire list
+            updateHighlight();
         }
-
-        hls.loadSource(url);
-        setTimeout(() => {
-          video.play();
-        }, 500);
 
         // Update metadata message
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
@@ -336,7 +362,7 @@
             const globalIndex = allStations.findIndex(s => s.id === stationToPlay.id);
             playStation(globalIndex);
         } else {
-            video.play();
+            video.play(); // Continue playing if paused, or attempt to play existing stream
         }
       } else {
         video.pause();
