@@ -85,7 +85,7 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v2.0: </p>
+  <p id="metadataMessage">Radio France player v1.4: </p>
 
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up (2)</button>
@@ -119,7 +119,7 @@
     initializeHLS();
 
     const stationList = document.getElementById('station-list');
-    const playPauseButton = document.getElementById('playPauseButton'); // Still need to get element to update its text
+    const playPauseButton = document.getElementById('playPauseButton');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
     const upBtn = document.getElementById('upBtn');
@@ -190,20 +190,30 @@
         const url = station.url;
         const radiotitle = station.name;
 
+        // --- Aggressive Stream Stop ---
+        // 1. Pause the video playback
         video.pause();
+        // 2. Clear the video source and force it to load (disconnect from previous stream)
+        video.removeAttribute('src'); // Removes the src attribute entirely
+        video.load(); // Forces the video element to reset its internal state
+        // --- End Aggressive Stream Stop ---
+
+        // Now, destroy the old HLS instance and create a new one for the new stream
         initializeHLS();
 
         const cueToPlay = stationCues[station.id];
 
         if (cueToPlay) {
-          cueToPlay.stop();
-          cueToPlay.off('end');
+          cueToPlay.stop(); // Stop any currently playing cue
+          cueToPlay.off('end'); // Remove previous 'end' listener
           cueToPlay.once('end', () => {
+            // After cue ends, start the live stream
             hls.loadSource(url);
             video.play();
           });
           cueToPlay.play();
         } else {
+          // If no specific cue, directly load and play the live stream
           hls.loadSource(url);
           video.play();
         }
@@ -287,7 +297,6 @@
       updateHighlight();
     }
 
-    // --- List Navigation Functions (Up/Down) ---
     function moveHighlight(direction) {
         const stationsOnPage = allStations.filter(station => station.page === currentPage);
         if (stationsOnPage.length === 0) return;
@@ -306,7 +315,6 @@
     }
 
 
-    // --- Page Navigation Functions (Left/Right) ---
     function goToNextPage() {
       if (currentPage < maxPage) {
         currentPage++;
@@ -364,7 +372,7 @@
       // Key 0 (Play/Pause)
       if (event.key === '0') {
         event.preventDefault();
-        handlePlayPauseClick(); // Call the shared click handler
+        handlePlayPauseClick();
       }
 
       // Arrow Keys (New Mapping)
@@ -385,20 +393,20 @@
         goToPreviousPage();
       }
 
-      // Numpad Keys (retained as alternatives - assuming event.key works for these too)
-      if (event.key === '6') { // Numpad 6 or regular 6
+      // Numpad Keys (retained as alternatives)
+      if (event.key === '6') {
         event.preventDefault();
         goToNextPage();
       }
-      if (event.key === '4') { // Numpad 4 or regular 4
+      if (event.key === '4') {
         event.preventDefault();
         goToPreviousPage();
       }
-      if (event.key === '2') { // Numpad 2 or regular 2
+      if (event.key === '2') {
         event.preventDefault();
         moveHighlight('up');
       }
-      if (event.key === '8') { // Numpad 8 or regular 8
+      if (event.key === '8') {
         event.preventDefault();
         moveHighlight('down');
       }
