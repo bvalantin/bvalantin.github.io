@@ -55,7 +55,7 @@
       font-size: 0.9em; /* Further reduced font size */
       margin-bottom: 8px; /* Reduced margin */
       border: none;
-      border-radius: 4ph;
+      border-radius: 4px;
       background-color: #28a745;
       color: white;
       cursor: pointer;
@@ -105,9 +105,21 @@
   <video id="my-video" controls playsinline></video>
 
   <script>
-    const hls = new Hls();
+    // Changed to 'let' so HLS instance can be re-assigned
+    let hls;
     const video = document.getElementById('my-video');
-    hls.attachMedia(video);
+
+    // Function to initialize/reinitialize HLS instance
+    function initializeHLS() {
+      if (hls) { // If an HLS instance already exists, destroy it first
+        hls.destroy();
+      }
+      hls = new Hls(); // Create a new HLS instance
+      hls.attachMedia(video); // Attach the new instance to the video element
+    }
+
+    // Call initializeHLS once at the very beginning to set up the first HLS instance
+    initializeHLS();
 
     const stationList = document.getElementById('station-list');
     const playPauseButton = document.getElementById('playPauseButton');
@@ -118,15 +130,14 @@
 
     // All stations data, including which 'page' they belong to
     const allStations = [
-      // Page 1 Stations (page: 0) - Removed France Musique, FIP Rock, Mouv'
-      // Added 'cue' property for specific audio cues
+      // Page 1 Stations (page: 0)
       { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0, cue: 'France Inter cue.mp3' },
       { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0, cue: 'France info cue.mp3' },
       { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0, cue: 'France culture cue.mp3' },
-      // Page 2 Stations (page: 1) - FIP family and La Musique d'Inter
+      // Page 2 Stations (page: 1)
       { id: 'la-musique-d-inter', name: 'La Musique d\'Inter', url: 'https://stream.radiofrance.fr/franceinterlamusiqueinter/franceinterlamusiqueinter.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip', name: 'FIP', url: 'https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceBose', page: 1 },
-      { id: 'fip-rock-new', name: 'FIP Rock (2)', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 }, // Added (2) to distinguish
+      { id: 'fip-rock-new', name: 'FIP Rock (2)', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-jazz', name: 'FIP Jazz', url: 'https://stream.radiofrance.fr/fipjazz/fipjazz.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-groove', name: 'FIP Groove', url: 'https://stream.radiofrance.fr/fipgroove/fipgroove.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-monde', name: 'FIP Monde', url: 'https://stream.radiofrance.fr/fipworld/fipworld.m3u8?id=radiofranceBose', page: 1 },
@@ -144,15 +155,14 @@
     let currentPlayingStationGlobalIndex = -1;
     let highlightedStationIndexOnPage = 0;
 
-    // Howler.js instances for specific cues (if needed, otherwise a single generic cue)
-    // Map station IDs to their Howl instances
+    // Howler.js instances for specific cues
     const stationCues = {};
     allStations.forEach(station => {
       if (station.cue) {
         stationCues[station.id] = new Howl({
           src: [station.cue],
-          html5: true, // Use HTML5 Audio for better compatibility
-          preload: true // Preload for instant playback
+          html5: true,
+          preload: true
         });
       }
     });
@@ -177,6 +187,7 @@
           video.pause();
           playPauseButton.textContent = "Play";
         });
+        // Media session next/previous track should still navigate through ALL stations globally
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
       }
@@ -191,36 +202,39 @@
 
         // Pause any currently playing video stream
         video.pause();
-        hls.destroy(); // Destroy current HLS instance for a clean start
+
+        // Ensure HLS instance is fresh and ready for a new source
+        initializeHLS();
 
         const cueToPlay = stationCues[station.id];
 
         if (cueToPlay) {
           // If there's a specific cue for this station, play it
+          cueToPlay.stop(); // Stop any currently playing cue (if rapid switching)
           cueToPlay.off('end'); // Remove previous end listener to prevent multiple calls
           cueToPlay.once('end', () => {
             // After cue ends, start the live stream
             hls.loadSource(url);
-            hls.attachMedia(video); // Re-attach media
-            video.play();
+            video.play(); // Play the video element
           });
           cueToPlay.play();
         } else {
           // If no specific cue, directly load and play the live stream
           hls.loadSource(url);
-          hls.attachMedia(video);
-          video.play();
+          video.play(); // Play the video element
         }
 
         // Update display and highlight
         if (station.page !== currentPage) {
           currentPage = station.page;
           const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
-          highlightedStationIndexOnPage = stationsOnNewPage.findIndex(s => s.id === station.id);
+          highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
+          if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0; // Default to 0 if not found
           renderStationsForPage(currentPage);
         } else {
             const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
-            highlightedStationIndexOnPage = stationsOnCurrentPage.findIndex(s => s.id === station.id);
+            highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
+            if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0; // Default to 0 if not found
             updateHighlight();
         }
 
@@ -238,13 +252,13 @@
       }
     }
 
-    // Function to play the next station in the allStations list
+    // Function to play the next station in the allStations list (for global next/prev track)
     function playNextStation() {
       const nextIndex = (currentPlayingStationGlobalIndex + 1) % allStations.length;
       playStation(nextIndex);
     }
 
-    // Function to play the previous station in the allStations list
+    // Function to play the previous station in the allStations list (for global next/prev track)
     function playPreviousStation() {
       const previousIndex = (currentPlayingStationGlobalIndex - 1 + allStations.length) % allStations.length;
       playStation(previousIndex);
@@ -271,7 +285,6 @@
       const stationsOnPage = allStations.filter(station => station.page === pageIndex);
 
       // Reset highlight if previous index is out of bounds for new page
-      // Or if no stations on the page, set to -1
       if (stationsOnPage.length === 0) {
           highlightedStationIndexOnPage = -1;
       } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
@@ -316,7 +329,13 @@
         } else if (direction === 'up') {
             highlightedStationIndexOnPage = (highlightedStationIndexOnPage - 1 + stationsOnPage.length) % stationsOnPage.length;
         }
-        updateHighlight();
+
+        updateHighlight(); // Update visual highlight
+
+        // Automatically play the highlighted station
+        const highlightedStationOnPage = stationsOnPage[highlightedStationIndexOnPage];
+        const globalIndexToPlay = allStations.findIndex(s => s.id === highlightedStationOnPage.id);
+        playStation(globalIndexToPlay);
     }
 
 
@@ -393,14 +412,25 @@
         event.preventDefault(); // Prevent default browser action if any
         playPauseButton.click(); // Trigger the button's click handler
       }
-      if (event.key === 'ArrowRight') { // Next Track (plays next global station)
+      // New: Arrow Up/Down for list navigation (next/previous station on current page)
+      if (event.key === 'ArrowUp') {
         event.preventDefault();
-        playNextStation();
+        moveHighlight('up');
       }
-      if (event.key === 'ArrowLeft') { // Previous Track (plays previous global station)
+      if (event.key === 'ArrowDown') {
         event.preventDefault();
-        playPreviousStation();
+        moveHighlight('down');
       }
+      // New: Arrow Left/Right for page navigation
+      if (event.key === 'ArrowRight') { // Go to Next Page
+        event.preventDefault();
+        goToNextPage();
+      }
+      if (event.key === 'ArrowLeft') { // Go to Previous Page
+        event.preventDefault();
+        goToPreviousPage();
+      }
+      // Numpad keys remain for their original functions
       if (event.key === '6' || event.code === 'Numpad6') { // Go to Next Page
         event.preventDefault();
         goToNextPage();
@@ -409,11 +439,11 @@
         event.preventDefault();
         goToPreviousPage();
       }
-      if (event.key === '2' || event.code === 'Numpad2') { // Move Highlight Up
+      if (event.key === '2' || event.code === 'Numpad2') { // Move Highlight Up AND Play
         event.preventDefault();
         moveHighlight('up');
       }
-      if (event.key === '8' || event.code === 'Numpad8') { // Move Highlight Down
+      if (event.key === '8' || event.code === 'Numpad8') { // Move Highlight Down AND Play
         event.preventDefault();
         moveHighlight('down');
       }
