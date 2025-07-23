@@ -18,6 +18,7 @@
       padding: 0;
       background-color: #f0f0f0;
       color: #333;
+      overflow-x: hidden; /* Prevent horizontal scrollbar from mouse edge detection */
     }
     #metadataMessage {
       font-size: 0.8em; /* Further reduced font size */
@@ -59,6 +60,17 @@
     button:hover {
       background-color: #218838;
     }
+    #nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    #nav-buttons button {
+      width: 48%; /* Roughly half width for two buttons */
+      margin-bottom: 0;
+      padding: 6px 0; /* Slightly smaller than play/pause */
+      font-size: 0.85em;
+    }
   </style>
 </head>
 
@@ -67,13 +79,12 @@
   <p id="metadataMessage">Radio France player v1.4: </p>
 
   <ul id="station-list">
-    <li><a id="france-inter" href="https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose">France Inter</a></li>
-    <li><a id="franceinfo" href="https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose">Franceinfo</a></li>
-    <li><a id="france-culture" href="https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose">France Culture</a></li>
-    <li><a id="france-musique" href="https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose">France Musique</a></li>
-    <li><a id="fipRock" href="https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose">FIP Rock</a></li>
-    <li><a id="mouv" href="https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose">Mouv'</a></li>
-  </ul>
+    </ul>
+
+  <div id="nav-buttons">
+    <button id="prevPageBtn">&lt; Previous Page</button>
+    <button id="nextPageBtn">Next Page &gt;</button>
+  </div>
 
   <button id="playPauseButton">Play</button>
 
@@ -84,10 +95,39 @@
     const video = document.getElementById('my-video');
     hls.attachMedia(video);
 
-    const anchors = document.querySelectorAll('a');
-    let currentIndex = -1; // Keeps track of the current station index
-
+    const stationList = document.getElementById('station-list');
     const playPauseButton = document.getElementById('playPauseButton');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+
+    // All stations data, including which 'page' they belong to
+    const allStations = [
+      // Page 1 Stations
+      { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0 },
+      { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0 },
+      { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0 },
+      { id: 'france-musique', name: 'France Musique', url: 'https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose', page: 0 },
+      { id: 'fipRock', name: 'FIP Rock', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 0 },
+      { id: 'mouv', name: 'Mouv\'', url: 'https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose', page: 0 },
+      // Page 2 Stations (FIP family and La Musique d'Inter)
+      { id: 'la-musique-d-inter', name: 'La Musique d\'Inter', url: 'https://stream.radiofrance.fr/franceinterlamusiqueinter/franceinterlamusiqueinter.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip', name: 'FIP', url: 'https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-rock-new', name: 'FIP Rock (2)', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 }, // Added (2) to distinguish
+      { id: 'fip-jazz', name: 'FIP Jazz', url: 'https://stream.radiofrance.fr/fipjazz/fipjazz.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-groove', name: 'FIP Groove', url: 'https://stream.radiofrance.fr/fipgroove/fipgroove.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-monde', name: 'FIP Monde', url: 'https://stream.radiofrance.fr/fipworld/fipworld.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-nouveautes', name: 'FIP Nouveautés', url: 'https://stream.radiofrance.fr/fipnouveautes/fipnouveautes.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-reggae', name: 'FIP Reggae', url: 'https://stream.radiofrance.fr/fipreggae/fipreggae.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-electro', name: 'FIP Electro', url: 'https://stream.radiofrance.fr/fipelectro/fipelectro.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-metal', name: 'FIP Metal', url: 'https://stream.radiofrance.fr/fipmetal/fipmetal.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-pop', name: 'FIP Pop', url: 'https://stream.radiofrance.fr/fippop/fippop.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-hiphop', name: 'FIP Hip Hop', url: 'https://stream.radiofrance.fr/fiphiphop/fiphiphop.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-sacre-francais', name: 'FIP Sacré Français', url: 'https://stream.radiofrance.fr/fipsacrefrancais/fipsacrefrancais.m3u8?id=radiofranceBose', page: 1 }
+    ];
+
+    let currentPage = 0;
+    const maxPage = Math.max(...allStations.map(s => s.page)); // Determine max page number
+    let currentPlayingStationGlobalIndex = -1; // Index in the allStations array
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -102,7 +142,6 @@
         });
 
         // Set action handlers for media keys (Bluetooth players, OS media controls)
-        // These already cover "MediaPlay", "MediaPause", "MediaTrackNext", "MediaTrackPrevious"
         navigator.mediaSession.setActionHandler('play', () => video.play());
         navigator.mediaSession.setActionHandler('pause', () => video.pause());
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
@@ -113,12 +152,18 @@
       }
     }
 
-    // Function to play a station by index
-    function playStation(index) {
-      if (index >= 0 && index < anchors.length) {
-        const anchor = anchors[index];
-        const url = anchor.href;
-        const radiotitle = anchor.id;
+    // Function to play a station by its global index
+    function playStation(globalIndex) {
+      if (globalIndex >= 0 && globalIndex < allStations.length) {
+        const station = allStations[globalIndex];
+        const url = station.url;
+        const radiotitle = station.name;
+
+        // If playing a station on a different page, update the display
+        if (station.page !== currentPage) {
+          currentPage = station.page;
+          renderStationsForPage(currentPage);
+        }
 
         hls.loadSource(url);
         setTimeout(() => {
@@ -131,38 +176,89 @@
         // Update Media Session metadata
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectoriel-radio-france.jpg");
 
-        // Update current index
-        currentIndex = index;
+        // Update current playing index
+        currentPlayingStationGlobalIndex = globalIndex;
 
         // Update Play/Pause button text
         playPauseButton.textContent = "Pause";
       }
     }
 
-    // Function to play the next station
+    // Function to play the next station in the allStations list
     function playNextStation() {
-      const nextIndex = (currentIndex + 1) % anchors.length; // Wrap around to the first station
+      const nextIndex = (currentPlayingStationGlobalIndex + 1) % allStations.length;
       playStation(nextIndex);
     }
 
-    // Function to play the previous station
+    // Function to play the previous station in the allStations list
     function playPreviousStation() {
-      const previousIndex = (currentIndex - 1 + anchors.length) % anchors.length; // Wrap around to the last station
+      const previousIndex = (currentPlayingStationGlobalIndex - 1 + allStations.length) % allStations.length;
       playStation(previousIndex);
     }
 
-    // Event listener for station links
-    anchors.forEach((anchor, index) => {
-      anchor.addEventListener('click', (event) => {
-        event.preventDefault();
-        playStation(index);
+    // Function to render stations for the given page index
+    function renderStationsForPage(pageIndex) {
+      stationList.innerHTML = ''; // Clear current list
+
+      const stationsOnPage = allStations.filter(station => station.page === pageIndex);
+
+      stationsOnPage.forEach((station) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.id = station.id;
+        a.href = station.url; // Use for fallback, but intercepted
+        a.textContent = station.name;
+        a.addEventListener('click', (event) => {
+          event.preventDefault();
+          const globalIndex = allStations.findIndex(s => s.id === station.id);
+          playStation(globalIndex);
+        });
+        li.appendChild(a);
+        stationList.appendChild(li);
       });
-    });
+    }
+
+    // --- Page Navigation Functions ---
+    function goToNextPage() {
+      if (currentPage < maxPage) {
+        currentPage++;
+        renderStationsForPage(currentPage);
+      } else {
+        // Optionally wrap around to the first page
+        currentPage = 0;
+        renderStationsForPage(currentPage);
+      }
+    }
+
+    function goToPreviousPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderStationsForPage(currentPage);
+      } else {
+        // Optionally wrap around to the last page
+        currentPage = maxPage;
+        renderStationsForPage(currentPage);
+      }
+    }
+
+    // --- Event Listeners ---
+
+    // Initial render of the first page
+    renderStationsForPage(currentPage);
 
     // Event listener for Play/Pause button
     playPauseButton.addEventListener('click', () => {
       if (video.paused) {
-        video.play();
+        // If nothing is playing yet, play the first station of the current page
+        if (currentPlayingStationGlobalIndex === -1 && allStations.length > 0) {
+            const firstStationOnPage = allStations.find(station => station.page === currentPage);
+            if (firstStationOnPage) {
+                const globalIndex = allStations.indexOf(firstStationOnPage);
+                playStation(globalIndex);
+            }
+        } else {
+            video.play();
+        }
         playPauseButton.textContent = "Pause";
       } else {
         video.pause();
@@ -179,21 +275,50 @@
       playPauseButton.textContent = "Play";
     });
 
-    // Key event listener for keyboard (for desktop testing or devices with physical keyboards)
-    // This handles basic keyboard controls for play/pause and track navigation.
+    // Page navigation button listeners
+    nextPageBtn.addEventListener('click', goToNextPage);
+    prevPageBtn.addEventListener('click', goToPreviousPage);
+
+    // Key event listener for keyboard
     document.addEventListener('keydown', (event) => {
-      if (event.key === '0') { // Example: '0' key for play/pause
+      if (event.key === '0') { // Play/Pause
         video.paused ? video.play() : video.pause();
       }
-      if (event.key === 'ArrowRight') { // Right arrow for next track
+      if (event.key === 'ArrowRight') { // Next Track
         playNextStation();
       }
-      if (event.key === 'ArrowLeft') { // Left arrow for previous track
+      if (event.key === 'ArrowLeft') { // Previous Track
         playPreviousStation();
       }
-      // If you wish to add keyboard control for volume, you would add similar
-      // event.key checks here (e.g., event.key === '+' or event.key === 'PageUp')
-      // and then modify video.volume. However, this is distinct from media session volume controls.
+      if (event.key === '6') { // Go to Next Page
+        goToNextPage();
+      }
+      if (event.key === '4') { // Go to Previous Page
+        goToPreviousPage();
+      }
+    });
+
+    // Mouse Edge Slide for Page Navigation (with debounce)
+    let lastPageSwitchTime = 0;
+    const PAGE_SWITCH_COOLDOWN = 500; // milliseconds to prevent rapid switching
+    const EDGE_THRESHOLD = 20; // Pixels from the edge to trigger
+
+    document.addEventListener('mousemove', (event) => {
+      const now = Date.now();
+      if (now - lastPageSwitchTime < PAGE_SWITCH_COOLDOWN) {
+        return; // Too soon for another page switch
+      }
+
+      const screenWidth = window.innerWidth;
+      const mouseX = event.clientX;
+
+      if (mouseX > screenWidth - EDGE_THRESHOLD && currentPage < maxPage) {
+        lastPageSwitchTime = now;
+        goToNextPage();
+      } else if (mouseX < EDGE_THRESHOLD && currentPage > 0) {
+        lastPageSwitchTime = now;
+        goToPreviousPage();
+      }
     });
   </script>
 </body>
