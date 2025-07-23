@@ -101,11 +101,15 @@
           ]
         });
 
-        // Set action handlers
+        // Set action handlers for media keys (Bluetooth players, OS media controls)
+        // These already cover "MediaPlay", "MediaPause", "MediaTrackNext", "MediaTrackPrevious"
         navigator.mediaSession.setActionHandler('play', () => video.play());
         navigator.mediaSession.setActionHandler('pause', () => video.pause());
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
+
+        // Note: 'volumedown' and 'volumeup' actions are not directly supported by Media Session API.
+        // Volume control is typically handled by the operating system.
       }
     }
 
@@ -176,16 +180,20 @@
     });
 
     // Key event listener for keyboard (for desktop testing or devices with physical keyboards)
+    // This handles basic keyboard controls for play/pause and track navigation.
     document.addEventListener('keydown', (event) => {
-      if (event.key === '0') {
+      if (event.key === '0') { // Example: '0' key for play/pause
         video.paused ? video.play() : video.pause();
       }
-      if (event.key === 'ArrowRight') {
+      if (event.key === 'ArrowRight') { // Right arrow for next track
         playNextStation();
       }
-      if (event.key === 'ArrowLeft') {
+      if (event.key === 'ArrowLeft') { // Left arrow for previous track
         playPreviousStation();
       }
+      // If you wish to add keyboard control for volume, you would add similar
+      // event.key checks here (e.g., event.key === '+' or event.key === 'PageUp')
+      // and then modify video.volume. However, this is distinct from media session volume controls.
     });
   </script>
 </body>
