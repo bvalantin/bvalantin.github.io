@@ -408,42 +408,47 @@
 
     // Key event listener for keyboard
     document.addEventListener('keydown', (event) => {
-      if (event.key === '0' || event.code === 'Numpad0') { // Play/Pause
-        event.preventDefault(); // Prevent default browser action if any
-        playPauseButton.click(); // Trigger the button's click handler
+      // Use event.which || event.keyCode for broader compatibility
+      const keyCode = event.which || event.keyCode;
+
+      // Keystroke 0 (Play/Pause)
+      if (keyCode === 48) { // 0 key
+        event.preventDefault();
+        playPauseButton.click();
       }
-      // New: Arrow Up/Down for list navigation (next/previous station on current page)
-      if (event.key === 'ArrowUp') {
+
+      // Arrow Keys (New Mapping)
+      if (keyCode === 38) { // ArrowUp
         event.preventDefault();
         moveHighlight('up');
       }
-      if (event.key === 'ArrowDown') {
+      if (keyCode === 40) { // ArrowDown
         event.preventDefault();
         moveHighlight('down');
       }
-      // New: Arrow Left/Right for page navigation
-      if (event.key === 'ArrowRight') { // Go to Next Page
+      if (keyCode === 39) { // ArrowRight (for Next Page)
         event.preventDefault();
         goToNextPage();
       }
-      if (event.key === 'ArrowLeft') { // Go to Previous Page
+      if (keyCode === 37) { // ArrowLeft (for Previous Page)
         event.preventDefault();
         goToPreviousPage();
       }
-      // Numpad keys remain for their original functions
-      if (event.key === '6' || event.code === 'Numpad6') { // Go to Next Page
+
+      // Numpad Keys (retained as alternatives)
+      if (keyCode === 102) { // Numpad 6
         event.preventDefault();
         goToNextPage();
       }
-      if (event.key === '4' || event.code === 'Numpad4') { // Go to Previous Page
+      if (keyCode === 100) { // Numpad 4
         event.preventDefault();
         goToPreviousPage();
       }
-      if (event.key === '2' || event.code === 'Numpad2') { // Move Highlight Up AND Play
+      if (keyCode === 98) { // Numpad 2
         event.preventDefault();
         moveHighlight('up');
       }
-      if (event.key === '8' || event.code === 'Numpad8') { // Move Highlight Down AND Play
+      if (keyCode === 104) { // Numpad 8
         event.preventDefault();
         moveHighlight('down');
       }
