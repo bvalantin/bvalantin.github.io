@@ -49,7 +49,7 @@
       color: #333;
       border: 1px solid #e0a800;
     }
-    button {
+    button { /* This style still applies to the visual appearance */
       width: 100%;
       padding: 8px 0; /* Reduced padding for smaller button */
       font-size: 0.9em; /* Further reduced font size */
@@ -88,53 +88,47 @@
   <p id="metadataMessage">Radio France player v1.4: </p>
 
   <div id="list-nav-buttons">
-    <button id="upBtn">Up (2)</button>
-    <button id="downBtn">Down (8)</button>
+    <button id="upBtn" onclick="moveHighlight('up')">Up (2)</button>
+    <button id="downBtn" onclick="moveHighlight('down')">Down (8)</button>
   </div>
 
   <ul id="station-list">
     </ul>
 
   <div id="page-nav-buttons">
-    <button id="prevPageBtn">&lt; Previous Page (4)</button>
-    <button id="nextPageBtn">Next Page (6) &gt;</button>
+    <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page (4)</button>
+    <button id="nextPageBtn" onclick="goToNextPage()">Next Page (6) &gt;</button>
   </div>
 
-  <button id="playPauseButton">Play</button>
+  <button id="playPauseButton" onclick="handlePlayPauseClick()">Play</button>
 
   <video id="my-video" controls playsinline></video>
 
   <script>
-    // Changed to 'let' so HLS instance can be re-assigned
     let hls;
     const video = document.getElementById('my-video');
 
-    // Function to initialize/reinitialize HLS instance
     function initializeHLS() {
-      if (hls) { // If an HLS instance already exists, destroy it first
+      if (hls) {
         hls.destroy();
       }
-      hls = new Hls(); // Create a new HLS instance
-      hls.attachMedia(video); // Attach the new instance to the video element
+      hls = new Hls();
+      hls.attachMedia(video);
     }
 
-    // Call initializeHLS once at the very beginning to set up the first HLS instance
     initializeHLS();
 
     const stationList = document.getElementById('station-list');
-    const playPauseButton = document.getElementById('playPauseButton');
+    const playPauseButton = document.getElementById('playPauseButton'); // Still need to get element to update its text
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
     const upBtn = document.getElementById('upBtn');
     const downBtn = document.getElementById('downBtn');
 
-    // All stations data, including which 'page' they belong to
     const allStations = [
-      // Page 1 Stations (page: 0)
       { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0, cue: 'France Inter cue.mp3' },
       { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0, cue: 'France info cue.mp3' },
       { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0, cue: 'France culture cue.mp3' },
-      // Page 2 Stations (page: 1)
       { id: 'la-musique-d-inter', name: 'La Musique d\'Inter', url: 'https://stream.radiofrance.fr/franceinterlamusiqueinter/franceinterlamusiqueinter.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip', name: 'FIP', url: 'https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-rock-new', name: 'FIP Rock (2)', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 },
@@ -155,7 +149,6 @@
     let currentPlayingStationGlobalIndex = -1;
     let highlightedStationIndexOnPage = 0;
 
-    // Howler.js instances for specific cues
     const stationCues = {};
     allStations.forEach(station => {
       if (station.cue) {
@@ -167,7 +160,6 @@
       }
     });
 
-    // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -187,90 +179,70 @@
           video.pause();
           playPauseButton.textContent = "Play";
         });
-        // Media session next/previous track should still navigate through ALL stations globally
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
       }
     }
 
-    // Function to play a station by its global index
     function playStation(globalIndex) {
       if (globalIndex >= 0 && globalIndex < allStations.length) {
         const station = allStations[globalIndex];
         const url = station.url;
         const radiotitle = station.name;
 
-        // Pause any currently playing video stream
         video.pause();
-
-        // Ensure HLS instance is fresh and ready for a new source
         initializeHLS();
 
         const cueToPlay = stationCues[station.id];
 
         if (cueToPlay) {
-          // If there's a specific cue for this station, play it
-          cueToPlay.stop(); // Stop any currently playing cue (if rapid switching)
-          cueToPlay.off('end'); // Remove previous end listener to prevent multiple calls
+          cueToPlay.stop();
+          cueToPlay.off('end');
           cueToPlay.once('end', () => {
-            // After cue ends, start the live stream
             hls.loadSource(url);
-            video.play(); // Play the video element
+            video.play();
           });
           cueToPlay.play();
         } else {
-          // If no specific cue, directly load and play the live stream
           hls.loadSource(url);
-          video.play(); // Play the video element
+          video.play();
         }
 
-        // Update display and highlight
         if (station.page !== currentPage) {
           currentPage = station.page;
           const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
           highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
-          if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0; // Default to 0 if not found
+          if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
           renderStationsForPage(currentPage);
         } else {
             const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
             highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
-            if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0; // Default to 0 if not found
+            if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
             updateHighlight();
         }
 
-        // Update metadata message
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
-
-        // Update Media Session metadata
-        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectoriel-radio-france.jpg");
-
-        // Update current playing index
+        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
         currentPlayingStationGlobalIndex = globalIndex;
-
-        // Update Play/Pause button text
         playPauseButton.textContent = "Pause";
       }
     }
 
-    // Function to play the next station in the allStations list (for global next/prev track)
     function playNextStation() {
       const nextIndex = (currentPlayingStationGlobalIndex + 1) % allStations.length;
       playStation(nextIndex);
     }
 
-    // Function to play the previous station in the allStations list (for global next/prev track)
     function playPreviousStation() {
       const previousIndex = (currentPlayingStationGlobalIndex - 1 + allStations.length) % allStations.length;
       playStation(previousIndex);
     }
 
-    // Function to update the visual highlight on the current page
     function updateHighlight() {
         const visibleLinks = stationList.querySelectorAll('a');
         visibleLinks.forEach((link, index) => {
             if (index === highlightedStationIndexOnPage) {
                 link.classList.add('highlighted');
-                // Scroll into view if needed
                 link.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } else {
                 link.classList.remove('highlighted');
@@ -278,17 +250,15 @@
         });
     }
 
-    // Function to render stations for the given page index
     function renderStationsForPage(pageIndex) {
-      stationList.innerHTML = ''; // Clear current list
+      stationList.innerHTML = '';
 
       const stationsOnPage = allStations.filter(station => station.page === pageIndex);
 
-      // Reset highlight if previous index is out of bounds for new page
       if (stationsOnPage.length === 0) {
           highlightedStationIndexOnPage = -1;
       } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
-          highlightedStationIndexOnPage = 0; // Default to first item if invalid
+          highlightedStationIndexOnPage = 0;
       }
 
 
@@ -296,10 +266,9 @@
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.id = station.id;
-        a.href = "#"; // Prevent default navigation
+        a.href = "#";
         a.textContent = station.name;
 
-        // Add highlight class if it's the currently highlighted station
         if (index === highlightedStationIndexOnPage) {
             a.classList.add('highlighted');
         }
@@ -308,21 +277,20 @@
           event.preventDefault();
           const globalIndex = allStations.findIndex(s => s.id === station.id);
           playStation(globalIndex);
-          highlightedStationIndexOnPage = index; // Update highlight after direct click
+          highlightedStationIndexOnPage = index;
           updateHighlight();
         });
         li.appendChild(a);
         stationList.appendChild(li);
       });
 
-      // Ensure the highlighted item is in view after re-rendering
       updateHighlight();
     }
 
     // --- List Navigation Functions (Up/Down) ---
     function moveHighlight(direction) {
         const stationsOnPage = allStations.filter(station => station.page === currentPage);
-        if (stationsOnPage.length === 0) return; // No stations to highlight
+        if (stationsOnPage.length === 0) return;
 
         if (direction === 'down') {
             highlightedStationIndexOnPage = (highlightedStationIndexOnPage + 1) % stationsOnPage.length;
@@ -330,9 +298,8 @@
             highlightedStationIndexOnPage = (highlightedStationIndexOnPage - 1 + stationsOnPage.length) % stationsOnPage.length;
         }
 
-        updateHighlight(); // Update visual highlight
+        updateHighlight();
 
-        // Automatically play the highlighted station
         const highlightedStationOnPage = stationsOnPage[highlightedStationIndexOnPage];
         const globalIndexToPlay = allStations.findIndex(s => s.id === highlightedStationOnPage.id);
         playStation(globalIndexToPlay);
@@ -343,10 +310,9 @@
     function goToNextPage() {
       if (currentPage < maxPage) {
         currentPage++;
-        highlightedStationIndexOnPage = 0; // Reset highlight on new page
+        highlightedStationIndexOnPage = 0;
         renderStationsForPage(currentPage);
       } else {
-        // Optionally wrap around to the first page
         currentPage = 0;
         highlightedStationIndexOnPage = 0;
         renderStationsForPage(currentPage);
@@ -356,39 +322,35 @@
     function goToPreviousPage() {
       if (currentPage > 0) {
         currentPage--;
-        highlightedStationIndexOnPage = 0; // Reset highlight on new page
+        highlightedStationIndexOnPage = 0;
         renderStationsForPage(currentPage);
       } else {
-        // Optionally wrap around to the last page
         currentPage = maxPage;
         highlightedStationIndexOnPage = 0;
         renderStationsForPage(currentPage);
       }
     }
 
-    // --- Event Listeners ---
-
-    // Initial render of the first page
-    renderStationsForPage(currentPage);
-
-    // Event listener for Play/Pause button
-    playPauseButton.addEventListener('click', () => {
+    // --- Button Click Handlers (now called directly from HTML onclick) ---
+    function handlePlayPauseClick() {
       if (video.paused) {
-        // If nothing is playing and a station is highlighted, play the highlighted one
         const stationsOnPage = allStations.filter(s => s.page === currentPage);
         if (currentPlayingStationGlobalIndex === -1 && stationsOnPage.length > 0 && highlightedStationIndexOnPage >= 0 && highlightedStationIndexOnPage < stationsOnPage.length) {
             const stationToPlay = stationsOnPage[highlightedStationIndexOnPage];
             const globalIndex = allStations.findIndex(s => s.id === stationToPlay.id);
             playStation(globalIndex);
         } else {
-            video.play(); // Continue playing if paused, or attempt to play existing stream
+            video.play();
         }
       } else {
         video.pause();
       }
-    });
+    }
 
-    // Update Play/Pause button state when playback is paused or resumed
+    // Initial render of the first page
+    renderStationsForPage(currentPage);
+
+    // Update Play/Pause button text when video state changes
     video.addEventListener('play', () => {
       playPauseButton.textContent = "Pause";
     });
@@ -397,58 +359,46 @@
       playPauseButton.textContent = "Play";
     });
 
-    // Page navigation button listeners
-    nextPageBtn.addEventListener('click', goToNextPage);
-    prevPageBtn.addEventListener('click', goToPreviousPage);
-
-    // List navigation button listeners
-    upBtn.addEventListener('click', () => moveHighlight('up'));
-    downBtn.addEventListener('click', () => moveHighlight('down'));
-
-
     // Key event listener for keyboard
     document.addEventListener('keydown', (event) => {
-      // Use event.which || event.keyCode for broader compatibility
-      const keyCode = event.which || event.keyCode;
-
-      // Keystroke 0 (Play/Pause)
-      if (keyCode === 48) { // 0 key
+      // Key 0 (Play/Pause)
+      if (event.key === '0') {
         event.preventDefault();
-        playPauseButton.click();
+        handlePlayPauseClick(); // Call the shared click handler
       }
 
       // Arrow Keys (New Mapping)
-      if (keyCode === 38) { // ArrowUp
+      if (event.key === 'ArrowUp') {
         event.preventDefault();
         moveHighlight('up');
       }
-      if (keyCode === 40) { // ArrowDown
+      if (event.key === 'ArrowDown') {
         event.preventDefault();
         moveHighlight('down');
       }
-      if (keyCode === 39) { // ArrowRight (for Next Page)
+      if (event.key === 'ArrowRight') { // Go to Next Page
         event.preventDefault();
         goToNextPage();
       }
-      if (keyCode === 37) { // ArrowLeft (for Previous Page)
+      if (event.key === 'ArrowLeft') { // Go to Previous Page
         event.preventDefault();
         goToPreviousPage();
       }
 
-      // Numpad Keys (retained as alternatives)
-      if (keyCode === 102) { // Numpad 6
+      // Numpad Keys (retained as alternatives - assuming event.key works for these too)
+      if (event.key === '6') { // Numpad 6 or regular 6
         event.preventDefault();
         goToNextPage();
       }
-      if (keyCode === 100) { // Numpad 4
+      if (event.key === '4') { // Numpad 4 or regular 4
         event.preventDefault();
         goToPreviousPage();
       }
-      if (keyCode === 98) { // Numpad 2
+      if (event.key === '2') { // Numpad 2 or regular 2
         event.preventDefault();
         moveHighlight('up');
       }
-      if (keyCode === 104) { // Numpad 8
+      if (event.key === '8') { // Numpad 8 or regular 8
         event.preventDefault();
         moveHighlight('down');
       }
@@ -456,13 +406,13 @@
 
     // Mouse Edge Slide for Page Navigation (with debounce)
     let lastPageSwitchTime = 0;
-    const PAGE_SWITCH_COOLDOWN = 500; // milliseconds to prevent rapid switching
-    const EDGE_THRESHOLD = 20; // Pixels from the edge to trigger
+    const PAGE_SWITCH_COOLDOWN = 500;
+    const EDGE_THRESHOLD = 20;
 
     document.addEventListener('mousemove', (event) => {
       const now = Date.now();
       if (now - lastPageSwitchTime < PAGE_SWITCH_COOLDOWN) {
-        return; // Too soon for another page switch
+        return;
       }
 
       const screenWidth = window.innerWidth;
