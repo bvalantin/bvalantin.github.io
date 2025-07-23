@@ -43,8 +43,11 @@
       font-size: 0.8em; /* Further reduced font size */
       text-align: center;
     }
-    #station-list a:hover {
-      background-color: #0056b3;
+    /* Highlighted station style */
+    #station-list a.highlighted {
+      background-color: #ffc107; /* Yellow highlight */
+      color: #333;
+      border: 1px solid #e0a800;
     }
     button {
       width: 100%;
@@ -60,16 +63,22 @@
     button:hover {
       background-color: #218838;
     }
-    #nav-buttons {
+    #page-nav-buttons, #list-nav-buttons {
       display: flex;
       justify-content: space-between;
       margin-bottom: 10px;
     }
-    #nav-buttons button {
+    #page-nav-buttons button, #list-nav-buttons button {
       width: 48%; /* Roughly half width for two buttons */
       margin-bottom: 0;
-      padding: 6px 0; /* Slightly smaller than play/pause */
+      padding: 6px 0; /* Slightly smaller than main play/pause button */
       font-size: 0.85em;
+    }
+     #list-nav-buttons button {
+        background-color: #6c757d; /* Different color for list navigation */
+    }
+    #list-nav-buttons button:hover {
+        background-color: #5a6268;
     }
   </style>
 </head>
@@ -78,10 +87,15 @@
 
   <p id="metadataMessage">Radio France player v1.4: </p>
 
+  <div id="list-nav-buttons">
+    <button id="upBtn">Up (2)</button>
+    <button id="downBtn">Down (8)</button>
+  </div>
+
   <ul id="station-list">
     </ul>
 
-  <div id="nav-buttons">
+  <div id="page-nav-buttons">
     <button id="prevPageBtn">&lt; Previous Page</button>
     <button id="nextPageBtn">Next Page &gt;</button>
   </div>
@@ -99,17 +113,16 @@
     const playPauseButton = document.getElementById('playPauseButton');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
+    const upBtn = document.getElementById('upBtn');
+    const downBtn = document.getElementById('downBtn');
 
     // All stations data, including which 'page' they belong to
     const allStations = [
-      // Page 1 Stations
+      // Page 1 Stations (page: 0) - Removed France Musique, FIP Rock, Mouv'
       { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0 },
       { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0 },
       { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0 },
-      { id: 'france-musique', name: 'France Musique', url: 'https://stream.radiofrance.fr/francemusique/francemusique.m3u8?id=radiofranceBose', page: 0 },
-      { id: 'fipRock', name: 'FIP Rock', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 0 },
-      { id: 'mouv', name: 'Mouv\'', url: 'https://stream.radiofrance.fr/mouv/mouv.m3u8?id=radiofranceBose', page: 0 },
-      // Page 2 Stations (FIP family and La Musique d'Inter)
+      // Page 2 Stations (page: 1) - FIP family and La Musique d'Inter
       { id: 'la-musique-d-inter', name: 'La Musique d\'Inter', url: 'https://stream.radiofrance.fr/franceinterlamusiqueinter/franceinterlamusiqueinter.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip', name: 'FIP', url: 'https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-rock-new', name: 'FIP Rock (2)', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 }, // Added (2) to distinguish
@@ -128,6 +141,7 @@
     let currentPage = 0;
     const maxPage = Math.max(...allStations.map(s => s.page)); // Determine max page number
     let currentPlayingStationGlobalIndex = -1; // Index in the allStations array
+    let highlightedStationIndexOnPage = 0; // Index in the currently rendered stations
 
     // Function to update Media Session metadata
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -142,8 +156,14 @@
         });
 
         // Set action handlers for media keys (Bluetooth players, OS media controls)
-        navigator.mediaSession.setActionHandler('play', () => video.play());
-        navigator.mediaSession.setActionHandler('pause', () => video.pause());
+        navigator.mediaSession.setActionHandler('play', () => {
+          video.play();
+          playPauseButton.textContent = "Pause";
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          video.pause();
+          playPauseButton.textContent = "Play";
+        });
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
 
@@ -162,7 +182,15 @@
         // If playing a station on a different page, update the display
         if (station.page !== currentPage) {
           currentPage = station.page;
+          // Find the index of this station within its new page
+          const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
+          highlightedStationIndexOnPage = stationsOnNewPage.findIndex(s => s.id === station.id);
           renderStationsForPage(currentPage);
+        } else {
+            // If on the same page, update the highlight
+            const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
+            highlightedStationIndexOnPage = stationsOnCurrentPage.findIndex(s => s.id === station.id);
+            updateHighlight(); // Update highlight without re-rendering entire list
         }
 
         hls.loadSource(url);
@@ -196,36 +224,86 @@
       playStation(previousIndex);
     }
 
+    // Function to update the visual highlight on the current page
+    function updateHighlight() {
+        const visibleLinks = stationList.querySelectorAll('a');
+        visibleLinks.forEach((link, index) => {
+            if (index === highlightedStationIndexOnPage) {
+                link.classList.add('highlighted');
+                // Scroll into view if needed
+                link.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                link.classList.remove('highlighted');
+            }
+        });
+    }
+
     // Function to render stations for the given page index
     function renderStationsForPage(pageIndex) {
       stationList.innerHTML = ''; // Clear current list
 
       const stationsOnPage = allStations.filter(station => station.page === pageIndex);
 
-      stationsOnPage.forEach((station) => {
+      // Reset highlight if previous index is out of bounds for new page
+      // Or if no stations on the page, set to -1
+      if (stationsOnPage.length === 0) {
+          highlightedStationIndexOnPage = -1;
+      } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
+          highlightedStationIndexOnPage = 0; // Default to first item if invalid
+      }
+
+
+      stationsOnPage.forEach((station, index) => {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.id = station.id;
-        a.href = station.url; // Use for fallback, but intercepted
+        a.href = "#"; // Prevent default navigation
         a.textContent = station.name;
+
+        // Add highlight class if it's the currently highlighted station
+        if (index === highlightedStationIndexOnPage) {
+            a.classList.add('highlighted');
+        }
+
         a.addEventListener('click', (event) => {
           event.preventDefault();
           const globalIndex = allStations.findIndex(s => s.id === station.id);
           playStation(globalIndex);
+          highlightedStationIndexOnPage = index; // Update highlight after direct click
+          updateHighlight();
         });
         li.appendChild(a);
         stationList.appendChild(li);
       });
+
+      // Ensure the highlighted item is in view after re-rendering
+      updateHighlight();
     }
 
-    // --- Page Navigation Functions ---
+    // --- List Navigation Functions (Up/Down) ---
+    function moveHighlight(direction) {
+        const stationsOnPage = allStations.filter(station => station.page === currentPage);
+        if (stationsOnPage.length === 0) return; // No stations to highlight
+
+        if (direction === 'down') {
+            highlightedStationIndexOnPage = (highlightedStationIndexOnPage + 1) % stationsOnPage.length;
+        } else if (direction === 'up') {
+            highlightedStationIndexOnPage = (highlightedStationIndexOnPage - 1 + stationsOnPage.length) % stationsOnPage.length;
+        }
+        updateHighlight();
+    }
+
+
+    // --- Page Navigation Functions (Left/Right) ---
     function goToNextPage() {
       if (currentPage < maxPage) {
         currentPage++;
+        highlightedStationIndexOnPage = 0; // Reset highlight on new page
         renderStationsForPage(currentPage);
       } else {
         // Optionally wrap around to the first page
         currentPage = 0;
+        highlightedStationIndexOnPage = 0;
         renderStationsForPage(currentPage);
       }
     }
@@ -233,10 +311,12 @@
     function goToPreviousPage() {
       if (currentPage > 0) {
         currentPage--;
+        highlightedStationIndexOnPage = 0; // Reset highlight on new page
         renderStationsForPage(currentPage);
       } else {
         // Optionally wrap around to the last page
         currentPage = maxPage;
+        highlightedStationIndexOnPage = 0;
         renderStationsForPage(currentPage);
       }
     }
@@ -249,20 +329,17 @@
     // Event listener for Play/Pause button
     playPauseButton.addEventListener('click', () => {
       if (video.paused) {
-        // If nothing is playing yet, play the first station of the current page
-        if (currentPlayingStationGlobalIndex === -1 && allStations.length > 0) {
-            const firstStationOnPage = allStations.find(station => station.page === currentPage);
-            if (firstStationOnPage) {
-                const globalIndex = allStations.indexOf(firstStationOnPage);
-                playStation(globalIndex);
-            }
+        // If nothing is playing and a station is highlighted, play the highlighted one
+        const stationsOnPage = allStations.filter(s => s.page === currentPage);
+        if (currentPlayingStationGlobalIndex === -1 && stationsOnPage.length > 0 && highlightedStationIndexOnPage >= 0 && highlightedStationIndexOnPage < stationsOnPage.length) {
+            const stationToPlay = stationsOnPage[highlightedStationIndexOnPage];
+            const globalIndex = allStations.findIndex(s => s.id === stationToPlay.id);
+            playStation(globalIndex);
         } else {
             video.play();
         }
-        playPauseButton.textContent = "Pause";
       } else {
         video.pause();
-        playPauseButton.textContent = "Play";
       }
     });
 
@@ -279,22 +356,40 @@
     nextPageBtn.addEventListener('click', goToNextPage);
     prevPageBtn.addEventListener('click', goToPreviousPage);
 
+    // List navigation button listeners
+    upBtn.addEventListener('click', () => moveHighlight('up'));
+    downBtn.addEventListener('click', () => moveHighlight('down'));
+
+
     // Key event listener for keyboard
     document.addEventListener('keydown', (event) => {
-      if (event.key === '0') { // Play/Pause
-        video.paused ? video.play() : video.pause();
+      if (event.key === '0' || event.code === 'Numpad0') { // Play/Pause
+        event.preventDefault(); // Prevent default browser action if any
+        playPauseButton.click(); // Trigger the button's click handler
       }
-      if (event.key === 'ArrowRight') { // Next Track
+      if (event.key === 'ArrowRight') { // Next Track (plays next global station)
+        event.preventDefault();
         playNextStation();
       }
-      if (event.key === 'ArrowLeft') { // Previous Track
+      if (event.key === 'ArrowLeft') { // Previous Track (plays previous global station)
+        event.preventDefault();
         playPreviousStation();
       }
-      if (event.key === '6') { // Go to Next Page
+      if (event.key === '6' || event.code === 'Numpad6') { // Go to Next Page
+        event.preventDefault();
         goToNextPage();
       }
-      if (event.key === '4') { // Go to Previous Page
+      if (event.key === '4' || event.code === 'Numpad4') { // Go to Previous Page
+        event.preventDefault();
         goToPreviousPage();
+      }
+      if (event.key === '2' || event.code === 'Numpad2') { // Move Highlight Up
+        event.preventDefault();
+        moveHighlight('up');
+      }
+      if (event.key === '8' || event.code === 'Numpad8') { // Move Highlight Down
+        event.preventDefault();
+        moveHighlight('down');
       }
     });
 
