@@ -339,51 +339,66 @@
 
     // This is the function that has been moved to the very end
     function playStation(globalIndex) {
-      if (globalIndex >= 0 && globalIndex < allStations.length) {
-        const station = allStations[globalIndex];
-        const url = station.url;
-        const radiotitle = station.name;
+          if (globalIndex >= 0 && globalIndex < allStations.length) {
+            document.getElementById('metadataMessage').textContent = 'Step 1: Starting playStation';
 
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
+            const station = allStations[globalIndex];
+            const url = station.url;
+            const radiotitle = station.name;
 
-        initializeHLS();
+            // Diagnostic Step 2: Test video manipulation
+            document.getElementById('metadataMessage').textContent = 'Step 2: Pausing and clearing video';
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
 
-        const cueToPlay = stationCues[station.id];
+            // Diagnostic Step 3: Test HLS initialization
+            document.getElementById('metadataMessage').textContent = 'Step 3: Initializing HLS';
+            initializeHLS();
 
-        if (cueToPlay) {
-          cueToPlay.stop();
-          cueToPlay.off('end');
-          cueToPlay.once('end', () => {
-            hls.loadSource(url);
-            video.play();
-          });
-          cueToPlay.play();
-        } else {
-          hls.loadSource(url);
-          video.play();
+            const cueToPlay = stationCues[station.id];
+
+            if (cueToPlay) {
+              // Diagnostic Step 4a: Test cue playback
+              document.getElementById('metadataMessage').textContent = 'Step 4a: Playing intro cue';
+              cueToPlay.stop();
+              cueToPlay.off('end');
+              cueToPlay.once('end', () => {
+                document.getElementById('metadataMessage').textContent = 'Step 4b: Cue finished, loading stream';
+                hls.loadSource(url);
+                video.play();
+                // This is inside the cue callback, so it might not run immediately.
+              });
+              cueToPlay.play();
+            } else {
+              // Diagnostic Step 4c: Test direct stream loading (no cue)
+              document.getElementById('metadataMessage').textContent = 'Step 4c: No cue, loading stream directly';
+              hls.loadSource(url);
+              video.play();
+            }
+
+            // Diagnostic Step 5: Test UI updates
+            document.getElementById('metadataMessage').textContent = 'Step 5: Updating UI elements';
+            if (station.page !== currentPage) {
+              currentPage = station.page;
+              const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
+              highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
+              if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
+              renderStationsForPage(currentPage);
+            } else {
+                const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
+                highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
+                if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
+                updateHighlight();
+            }
+
+            // Diagnostic Step 6: Test final state updates
+            document.getElementById('metadataMessage').textContent = `Step 6: Now playing: ${radiotitle}`;
+            updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
+            currentPlayingStationGlobalIndex = globalIndex;
+            playPauseButton.textContent = "Pause (0)";
+          }
         }
-
-        if (station.page !== currentPage) {
-          currentPage = station.page;
-          const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
-          highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
-          if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
-          renderStationsForPage(currentPage);
-        } else {
-            const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
-            highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
-            if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
-            updateHighlight();
-        }
-
-        document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
-        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
-        currentPlayingStationGlobalIndex = globalIndex;
-        playPauseButton.textContent = "Pause (0)";
-      }
-    }
 
     // Final initialization calls
     renderStationsForPage(currentPage);
