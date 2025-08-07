@@ -85,7 +85,7 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v1.7: </p>
+  <p id="metadataMessage">Radio France player v1.8: </p>
 
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
@@ -360,8 +360,8 @@
     // Keystroke monitoring using event.key for better compatibility with your device
     document.addEventListener('keydown', (event) => {
         // Prevent default browser actions for all handled keys
-        if (['0', '2', '8', '4', '6', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'MediaTrackPrevious', 'MediaTrackNext'].includes(event.key)) {
-            event.preventDefault();
+//        if (['0', '2', '8', '4', '6', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'MediaTrackPrevious', 'MediaTrackNext'].includes(event.key)) {
+//            event.preventDefault();
         }
 
         // Handle Play/Pause
