@@ -85,19 +85,19 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v2.0: </p>
+  <p id="metadataMessage">Radio France player v1.4: </p>
 
   <div id="list-nav-buttons">
-    <button id="upBtn" onclick="moveHighlight('up')">Up (2)</button>
-    <button id="downBtn" onclick="moveHighlight('down')">Down (8)</button>
+    <button id="upBtn" onclick="moveHighlight('up')">Up</button>
+    <button id="downBtn" onclick="moveHighlight('down')">Down</button>
   </div>
 
   <ul id="station-list">
     </ul>
 
   <div id="page-nav-buttons">
-    <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page (4)</button>
-    <button id="nextPageBtn" onclick="goToNextPage()">Next Page (6) &gt;</button>
+    <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page</button>
+    <button id="nextPageBtn" onclick="goToNextPage()">Next Page &gt;</button>
   </div>
 
   <button id="playPauseButton" onclick="handlePlayPauseClick()">Play</button>
@@ -339,7 +339,6 @@
       }
     }
 
-    // --- Button Click Handlers (now called directly from HTML onclick) ---
     function handlePlayPauseClick() {
       if (video.paused) {
         const stationsOnPage = allStations.filter(s => s.page === currentPage);
@@ -355,61 +354,14 @@
       }
     }
 
-    // Initial render of the first page
     renderStationsForPage(currentPage);
 
-    // Update Play/Pause button text when video state changes
     video.addEventListener('play', () => {
       playPauseButton.textContent = "Pause";
     });
 
     video.addEventListener('pause', () => {
       playPauseButton.textContent = "Play";
-    });
-
-    // Key event listener for keyboard
-    document.addEventListener('keydown', (event) => {
-      // Key 0 (Play/Pause)
-      if (event.key === '0') {
-        event.preventDefault();
-        handlePlayPauseClick();
-      }
-
-      // Arrow Keys (New Mapping)
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        moveHighlight('up');
-      }
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        moveHighlight('down');
-      }
-      if (event.key === 'ArrowRight') { // Go to Next Page
-        event.preventDefault();
-        goToNextPage();
-      }
-      if (event.key === 'ArrowLeft') { // Go to Previous Page
-        event.preventDefault();
-        goToPreviousPage();
-      }
-
-      // Numpad Keys (retained as alternatives)
-      if (event.key === '6') {
-        event.preventDefault();
-        goToNextPage();
-      }
-      if (event.key === '4') {
-        event.preventDefault();
-        goToPreviousPage();
-      }
-      if (event.key === '2') {
-        event.preventDefault();
-        moveHighlight('up');
-      }
-      if (event.key === '8') {
-        event.preventDefault();
-        moveHighlight('down');
-      }
     });
 
     // Mouse Edge Slide for Page Navigation (with debounce)
