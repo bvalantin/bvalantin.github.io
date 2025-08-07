@@ -85,7 +85,7 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v1.4: </p>
+  <p id="metadataMessage">Radio France player v1.8: </p>
 
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
@@ -218,26 +218,20 @@
     }
 
     function updateHighlight() {
-        document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.1';
         const visibleLinks = stationList.querySelectorAll('a');
-        document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.2';
         visibleLinks.forEach((link, index) => {
             if (index === highlightedStationIndexOnPage) {
                 link.classList.add('highlighted');
-                document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.3';
-                link.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.4';
+                // Removed the unsupported arguments, so it will now work.
+                link.scrollIntoView();
             } else {
                 link.classList.remove('highlighted');
             }
         });
-        document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.5';
     }
 
     function renderStationsForPage(pageIndex) {
-        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.6';
         stationList.innerHTML = '';
-        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.7';
         const stationsOnPage = allStations.filter(station => station.page === pageIndex);
 
         if (stationsOnPage.length === 0) {
@@ -245,7 +239,6 @@
         } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
             highlightedStationIndexOnPage = 0;
         }
-        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.8';
 
         stationsOnPage.forEach((station, index) => {
             const li = document.createElement('li');
@@ -257,7 +250,6 @@
             if (index === highlightedStationIndexOnPage) {
                 a.classList.add('highlighted');
             }
-            document.getElementById('metadataMessage').textContent = `Render Stations: 5.9.${index}`;
             a.addEventListener('click', (event) => {
                 event.preventDefault();
                 const globalIndex = allStations.findIndex(s => s.id === station.id);
@@ -268,9 +260,7 @@
             li.appendChild(a);
             stationList.appendChild(li);
         });
-        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.10';
         updateHighlight();
-        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.11';
     }
 
     function moveHighlight(direction) {
@@ -331,37 +321,29 @@
 
     function playStation(globalIndex) {
       if (globalIndex >= 0 && globalIndex < allStations.length) {
-        document.getElementById('metadataMessage').textContent = 'Step 1: Starting playStation';
         const station = allStations[globalIndex];
         const url = station.url;
         const radiotitle = station.name;
 
-        document.getElementById('metadataMessage').textContent = 'Step 2: Pausing and clearing video';
         video.pause();
         video.removeAttribute('src');
         video.load();
-
-        document.getElementById('metadataMessage').textContent = 'Step 3: Initializing HLS';
         initializeHLS();
 
         const cueToPlay = stationCues[station.id];
         if (cueToPlay) {
-            document.getElementById('metadataMessage').textContent = 'Step 4a: Playing intro cue';
             cueToPlay.stop();
             cueToPlay.off('end');
             cueToPlay.once('end', () => {
-                document.getElementById('metadataMessage').textContent = 'Step 4b: Cue finished, loading stream';
                 hls.loadSource(url);
                 video.play();
             });
             cueToPlay.play();
         } else {
-            document.getElementById('metadataMessage').textContent = 'Step 4c: No cue, loading stream directly';
             hls.loadSource(url);
             video.play();
         }
 
-        document.getElementById('metadataMessage').textContent = 'Step 5: Updating UI elements';
         if (station.page !== currentPage) {
             currentPage = station.page;
             const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
@@ -375,7 +357,7 @@
             updateHighlight();
         }
 
-        document.getElementById('metadataMessage').textContent = `Step 6: Now playing: ${radiotitle}`;
+        document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
         currentPlayingStationGlobalIndex = globalIndex;
         playPauseButton.textContent = "Pause (0)";
