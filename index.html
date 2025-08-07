@@ -85,7 +85,7 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v1.5: </p>
+  <p id="metadataMessage">Radio France player v1.4: </p>
 
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
@@ -260,12 +260,20 @@
     }
 
     function playNextStation() {
-      const nextIndex = (currentPlayingStationGlobalIndex + 1) % allStations.length;
+      let nextIndex = 0;
+      // Check if a station is already playing
+      if (currentPlayingStationGlobalIndex !== -1) {
+        nextIndex = (currentPlayingStationGlobalIndex + 1) % allStations.length;
+      }
       playStation(nextIndex);
     }
 
     function playPreviousStation() {
-      const previousIndex = (currentPlayingStationGlobalIndex - 1 + allStations.length) % allStations.length;
+      let previousIndex = 0;
+      // Check if a station is already playing
+      if (currentPlayingStationGlobalIndex !== -1) {
+        previousIndex = (currentPlayingStationGlobalIndex - 1 + allStations.length) % allStations.length;
+      }
       playStation(previousIndex);
     }
 
