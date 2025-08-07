@@ -14,46 +14,46 @@
     }
     body {
       font-family: sans-serif;
-      margin: 5px; /* Reduced margin */
+      margin: 5px;
       padding: 0;
       background-color: #f0f0f0;
       color: #333;
-      overflow-x: hidden; /* Prevent horizontal scrollbar from mouse edge detection */
+      overflow-x: hidden;
     }
     #metadataMessage {
-      font-size: 0.8em; /* Further reduced font size */
-      margin-bottom: 5px; /* Reduced margin */
+      font-size: 0.8em;
+      margin-bottom: 5px;
       color: #555;
     }
     #station-list {
       list-style: none;
       padding: 0;
-      margin: 0 0 10px 0; /* Reduced margin */
+      margin: 0 0 10px 0;
     }
     #station-list li {
-      margin-bottom: 3px; /* Reduced gap between items */
+      margin-bottom: 3px;
     }
     #station-list a {
       display: block;
-      padding: 6px 8px; /* Reduced padding for smaller buttons */
+      padding: 6px 8px;
       background-color: #007bff;
       color: white;
       text-decoration: none;
       border-radius: 4px;
-      font-size: 0.8em; /* Further reduced font size */
+      font-size: 0.8em;
       text-align: center;
     }
     /* Highlighted station style */
     #station-list a.highlighted {
-      background-color: #ffc107; /* Yellow highlight */
+      background-color: #ffc107;
       color: #333;
       border: 1px solid #e0a800;
     }
-    button { /* This style still applies to the visual appearance */
+    button {
       width: 100%;
-      padding: 8px 0; /* Reduced padding for smaller button */
-      font-size: 0.9em; /* Further reduced font size */
-      margin-bottom: 8px; /* Reduced margin */
+      padding: 8px 0;
+      font-size: 0.9em;
+      margin-bottom: 8px;
       border: none;
       border-radius: 4px;
       background-color: #28a745;
@@ -69,13 +69,13 @@
       margin-bottom: 10px;
     }
     #page-nav-buttons button, #list-nav-buttons button {
-      width: 48%; /* Roughly half width for two buttons */
+      width: 48%;
       margin-bottom: 0;
-      padding: 6px 0; /* Slightly smaller than main play/pause button */
+      padding: 6px 0;
       font-size: 0.85em;
     }
      #list-nav-buttons button {
-        background-color: #6c757d; /* Different color for list navigation */
+        background-color: #6c757d;
     }
     #list-nav-buttons button:hover {
         background-color: #5a6268;
@@ -93,7 +93,7 @@
   </div>
 
   <ul id="station-list">
-    </ul>
+  </ul>
 
   <div id="page-nav-buttons">
     <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page (4)</button>
@@ -190,11 +190,9 @@
         const url = station.url;
         const radiotitle = station.name;
 
-        // --- Aggressive Stream Stop ---
         video.pause();
         video.removeAttribute('src');
         video.load();
-        // --- End Aggressive Stream Stop ---
 
         initializeHLS();
 
@@ -361,35 +359,39 @@
 
     // Key event listener for keyboard
     document.addEventListener('keydown', (event) => {
-      // Prevent default browser actions for these keys
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '2', '4', '6', '8', '0', 'MediaTrackPrevious', 'MediaTrackNext'].includes(event.key)) {
-        event.preventDefault();
-      }
+        // A more robust check for both modern and legacy key codes
+        const key = event.key || String.fromCharCode(event.keyCode);
 
-      // Play/Pause (0)
-      if (event.key === '0') {
-        handlePlayPauseClick();
-      }
+        // Prevent default browser actions for all handled keys
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '2', '4', '6', '8', '0', 'MediaTrackPrevious', 'MediaTrackNext'].includes(key) ||
+            [38, 40, 37, 39, 50, 52, 54, 56, 48].includes(event.keyCode)) {
+            event.preventDefault();
+        }
 
-      // Previous Station (ArrowUp, 2, MediaTrackPrevious)
-      if (event.key === 'ArrowUp' || event.key === '2' || event.key === 'MediaTrackPrevious') {
-        playPreviousStation();
-      }
+        // Play/Pause (0)
+        if (key === '0' || event.keyCode === 48) {
+            handlePlayPauseClick();
+        }
 
-      // Next Station (ArrowDown, 8, MediaTrackNext)
-      if (event.key === 'ArrowDown' || event.key === '8' || event.key === 'MediaTrackNext') {
-        playNextStation();
-      }
+        // Previous Station (ArrowUp, 2, MediaTrackPrevious)
+        if (key === 'ArrowUp' || key === '2' || key === 'MediaTrackPrevious' || event.keyCode === 38 || event.keyCode === 50) {
+            playPreviousStation();
+        }
 
-      // Previous Page (ArrowLeft, 4)
-      if (event.key === 'ArrowLeft' || event.key === '4') {
-        goToPreviousPage();
-      }
+        // Next Station (ArrowDown, 8, MediaTrackNext)
+        if (key === 'ArrowDown' || key === '8' || key === 'MediaTrackNext' || event.keyCode === 40 || event.keyCode === 56) {
+            playNextStation();
+        }
 
-      // Next Page (ArrowRight, 6)
-      if (event.key === 'ArrowRight' || event.key === '6') {
-        goToNextPage();
-      }
+        // Previous Page (ArrowLeft, 4)
+        if (key === 'ArrowLeft' || key === '4' || event.keyCode === 37 || event.keyCode === 52) {
+            goToPreviousPage();
+        }
+
+        // Next Page (ArrowRight, 6)
+        if (key === 'ArrowRight' || key === '6' || event.keyCode === 39 || event.keyCode === 54) {
+            goToNextPage();
+        }
     });
 
     // Mouse Edge Slide for Page Navigation (with debounce)
