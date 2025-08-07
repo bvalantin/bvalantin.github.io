@@ -150,35 +150,24 @@
       }
     });
 
-    // Keystroke monitoring using event.key for better compatibility with your device
     document.addEventListener('keydown', (event) => {
-        // Handle Play/Pause
         if (event.key === '0') {
             handlePlayPauseClick();
         }
-
-        // Handle Previous Station
         if (event.key === '2' || event.key === 'ArrowUp' || event.key === 'MediaTrackPrevious') {
             playPreviousStation();
         }
-
-        // Handle Next Station
         if (event.key === '8' || event.key === 'ArrowDown' || event.key === 'MediaTrackNext') {
             playNextStation();
         }
-
-        // Handle Previous Page
         if (event.key === '4' || event.key === 'ArrowLeft') {
             goToPreviousPage();
         }
-
-        // Handle Next Page
         if (event.key === '6' || event.key === 'ArrowRight') {
             goToNextPage();
         }
     });
 
-    // The rest of the script is now defined here, after the event listeners
     function initializeHLS() {
       if (hls) {
         hls.destroy();
@@ -186,7 +175,6 @@
       hls = new Hls();
       hls.attachMedia(video);
     }
-
     initializeHLS();
 
     function updateMediaSessionMetadata(title, artist, album, artwork) {
@@ -215,7 +203,6 @@
 
     function playNextStation() {
       let nextIndex = 0;
-      // Check if a station is already playing
       if (currentPlayingStationGlobalIndex !== -1) {
         nextIndex = (currentPlayingStationGlobalIndex + 1) % allStations.length;
       }
@@ -224,7 +211,6 @@
 
     function playPreviousStation() {
       let previousIndex = 0;
-      // Check if a station is already playing
       if (currentPlayingStationGlobalIndex !== -1) {
         previousIndex = (currentPlayingStationGlobalIndex - 1 + allStations.length) % allStations.length;
       }
@@ -232,52 +218,59 @@
     }
 
     function updateHighlight() {
+        document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.1';
         const visibleLinks = stationList.querySelectorAll('a');
+        document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.2';
         visibleLinks.forEach((link, index) => {
             if (index === highlightedStationIndexOnPage) {
                 link.classList.add('highlighted');
+                document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.3';
                 link.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.4';
             } else {
                 link.classList.remove('highlighted');
             }
         });
+        document.getElementById('metadataMessage').textContent = 'Update Highlight: 5.5';
     }
 
     function renderStationsForPage(pageIndex) {
-      stationList.innerHTML = '';
+        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.6';
+        stationList.innerHTML = '';
+        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.7';
+        const stationsOnPage = allStations.filter(station => station.page === pageIndex);
 
-      const stationsOnPage = allStations.filter(station => station.page === pageIndex);
-
-      if (stationsOnPage.length === 0) {
-          highlightedStationIndexOnPage = -1;
-      } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
-          highlightedStationIndexOnPage = 0;
-      }
-
-
-      stationsOnPage.forEach((station, index) => {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.id = station.id;
-        a.href = "#";
-        a.textContent = station.name;
-
-        if (index === highlightedStationIndexOnPage) {
-            a.classList.add('highlighted');
+        if (stationsOnPage.length === 0) {
+            highlightedStationIndexOnPage = -1;
+        } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
+            highlightedStationIndexOnPage = 0;
         }
+        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.8';
 
-        a.addEventListener('click', (event) => {
-          event.preventDefault();
-          const globalIndex = allStations.findIndex(s => s.id === station.id);
-          playStation(globalIndex);
-          highlightedStationIndexOnPage = index;
-          updateHighlight();
+        stationsOnPage.forEach((station, index) => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.id = station.id;
+            a.href = "#";
+            a.textContent = station.name;
+
+            if (index === highlightedStationIndexOnPage) {
+                a.classList.add('highlighted');
+            }
+            document.getElementById('metadataMessage').textContent = `Render Stations: 5.9.${index}`;
+            a.addEventListener('click', (event) => {
+                event.preventDefault();
+                const globalIndex = allStations.findIndex(s => s.id === station.id);
+                playStation(globalIndex);
+                highlightedStationIndexOnPage = index;
+                updateHighlight();
+            });
+            li.appendChild(a);
+            stationList.appendChild(li);
         });
-        li.appendChild(a);
-        stationList.appendChild(li);
-      });
-
-      updateHighlight();
+        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.10';
+        updateHighlight();
+        document.getElementById('metadataMessage').textContent = 'Render Stations: 5.11';
     }
 
     function moveHighlight(direction) {
@@ -296,7 +289,6 @@
         const globalIndexToPlay = allStations.findIndex(s => s.id === highlightedStationOnPage.id);
         playStation(globalIndexToPlay);
     }
-
 
     function goToNextPage() {
       if (currentPage < maxPage) {
@@ -337,70 +329,59 @@
       }
     }
 
-    // This is the function that has been moved to the very end
     function playStation(globalIndex) {
-          if (globalIndex >= 0 && globalIndex < allStations.length) {
-            document.getElementById('metadataMessage').textContent = 'Step 1: Starting playStation';
+      if (globalIndex >= 0 && globalIndex < allStations.length) {
+        document.getElementById('metadataMessage').textContent = 'Step 1: Starting playStation';
+        const station = allStations[globalIndex];
+        const url = station.url;
+        const radiotitle = station.name;
 
-            const station = allStations[globalIndex];
-            const url = station.url;
-            const radiotitle = station.name;
+        document.getElementById('metadataMessage').textContent = 'Step 2: Pausing and clearing video';
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
 
-            // Diagnostic Step 2: Test video manipulation
-            document.getElementById('metadataMessage').textContent = 'Step 2: Pausing and clearing video';
-            video.pause();
-            video.removeAttribute('src');
-            video.load();
+        document.getElementById('metadataMessage').textContent = 'Step 3: Initializing HLS';
+        initializeHLS();
 
-            // Diagnostic Step 3: Test HLS initialization
-            document.getElementById('metadataMessage').textContent = 'Step 3: Initializing HLS';
-            initializeHLS();
-
-            const cueToPlay = stationCues[station.id];
-
-            if (cueToPlay) {
-              // Diagnostic Step 4a: Test cue playback
-              document.getElementById('metadataMessage').textContent = 'Step 4a: Playing intro cue';
-              cueToPlay.stop();
-              cueToPlay.off('end');
-              cueToPlay.once('end', () => {
+        const cueToPlay = stationCues[station.id];
+        if (cueToPlay) {
+            document.getElementById('metadataMessage').textContent = 'Step 4a: Playing intro cue';
+            cueToPlay.stop();
+            cueToPlay.off('end');
+            cueToPlay.once('end', () => {
                 document.getElementById('metadataMessage').textContent = 'Step 4b: Cue finished, loading stream';
                 hls.loadSource(url);
                 video.play();
-                // This is inside the cue callback, so it might not run immediately.
-              });
-              cueToPlay.play();
-            } else {
-              // Diagnostic Step 4c: Test direct stream loading (no cue)
-              document.getElementById('metadataMessage').textContent = 'Step 4c: No cue, loading stream directly';
-              hls.loadSource(url);
-              video.play();
-            }
-
-            // Diagnostic Step 5: Test UI updates
-            document.getElementById('metadataMessage').textContent = 'Step 5: Updating UI elements';
-            if (station.page !== currentPage) {
-              currentPage = station.page;
-              const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
-              highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
-              if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
-              renderStationsForPage(currentPage);
-            } else {
-                const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
-                highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
-                if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
-                updateHighlight();
-            }
-
-            // Diagnostic Step 6: Test final state updates
-            document.getElementById('metadataMessage').textContent = `Step 6: Now playing: ${radiotitle}`;
-            updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
-            currentPlayingStationGlobalIndex = globalIndex;
-            playPauseButton.textContent = "Pause (0)";
-          }
+            });
+            cueToPlay.play();
+        } else {
+            document.getElementById('metadataMessage').textContent = 'Step 4c: No cue, loading stream directly';
+            hls.loadSource(url);
+            video.play();
         }
 
-    // Final initialization calls
+        document.getElementById('metadataMessage').textContent = 'Step 5: Updating UI elements';
+        if (station.page !== currentPage) {
+            currentPage = station.page;
+            const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
+            highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
+            if (highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
+            renderStationsForPage(currentPage);
+        } else {
+            const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
+            highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
+            if (highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
+            updateHighlight();
+        }
+
+        document.getElementById('metadataMessage').textContent = `Step 6: Now playing: ${radiotitle}`;
+        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
+        currentPlayingStationGlobalIndex = globalIndex;
+        playPauseButton.textContent = "Pause (0)";
+      }
+    }
+
     renderStationsForPage(currentPage);
 
     video.addEventListener('play', () => {
@@ -421,10 +402,8 @@
       if (now - lastPageSwitchTime < PAGE_SWITCH_COOLDOWN) {
         return;
       }
-
       const screenWidth = window.innerWidth;
       const mouseX = event.clientX;
-
       if (mouseX > screenWidth - EDGE_THRESHOLD && currentPage < maxPage) {
         lastPageSwitchTime = now;
         goToNextPage();
@@ -433,6 +412,6 @@
         goToPreviousPage();
       }
     });
-  </script>
+</script>
 </body>
 </html>
