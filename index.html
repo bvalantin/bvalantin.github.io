@@ -85,7 +85,7 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v1.8: </p>
+  <p id="metadataMessage">Radio France player v1.4: </p>
 
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
@@ -178,7 +178,7 @@
         }
     });
 
-    // All the functions are defined here, after all the variables and listeners
+    // The rest of the script is now defined here, after the event listeners
     function initializeHLS() {
       if (hls) {
         hls.destroy();
@@ -210,53 +210,6 @@
         });
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
-      }
-    }
-
-    function playStation(globalIndex) {
-      if (globalIndex >= 0 && globalIndex < allStations.length) {
-        const station = allStations[globalIndex];
-        const url = station.url;
-        const radiotitle = station.name;
-
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-
-        initializeHLS();
-
-        const cueToPlay = stationCues[station.id];
-
-        if (cueToPlay) {
-          cueToPlay.stop();
-          cueToPlay.off('end');
-          cueToPlay.once('end', () => {
-            hls.loadSource(url);
-            video.play();
-          });
-          cueToPlay.play();
-        } else {
-          hls.loadSource(url);
-          video.play();
-        }
-
-        if (station.page !== currentPage) {
-          currentPage = station.page;
-          const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
-          highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
-          if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
-          renderStationsForPage(currentPage);
-        } else {
-            const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
-            highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
-            if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
-            updateHighlight();
-        }
-
-        document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
-        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
-        currentPlayingStationGlobalIndex = globalIndex;
-        playPauseButton.textContent = "Pause (0)";
       }
     }
 
@@ -384,6 +337,55 @@
       }
     }
 
+    // This is the function that has been moved to the very end
+    function playStation(globalIndex) {
+      if (globalIndex >= 0 && globalIndex < allStations.length) {
+        const station = allStations[globalIndex];
+        const url = station.url;
+        const radiotitle = station.name;
+
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+
+        initializeHLS();
+
+        const cueToPlay = stationCues[station.id];
+
+        if (cueToPlay) {
+          cueToPlay.stop();
+          cueToPlay.off('end');
+          cueToPlay.once('end', () => {
+            hls.loadSource(url);
+            video.play();
+          });
+          cueToPlay.play();
+        } else {
+          hls.loadSource(url);
+          video.play();
+        }
+
+        if (station.page !== currentPage) {
+          currentPage = station.page;
+          const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
+          highlightedStationIndexOnPage = stationsOnNewPage.length > 0 ? stationsOnNewPage.findIndex(s => s.id === station.id) : 0;
+          if(highlightedStationIndexOnPage === -1 && stationsOnNewPage.length > 0) highlightedStationIndexOnPage = 0;
+          renderStationsForPage(currentPage);
+        } else {
+            const stationsOnCurrentPage = allStations.filter(s => s.page === currentPage);
+            highlightedStationIndexOnPage = stationsOnCurrentPage.length > 0 ? stationsOnCurrentPage.findIndex(s => s.id === station.id) : 0;
+            if(highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
+            updateHighlight();
+        }
+
+        document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
+        updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
+        currentPlayingStationGlobalIndex = globalIndex;
+        playPauseButton.textContent = "Pause (0)";
+      }
+    }
+
+    // Final initialization calls
     renderStationsForPage(currentPage);
 
     video.addEventListener('play', () => {
