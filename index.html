@@ -85,7 +85,7 @@
 
 <body>
 
-  <p id="metadataMessage">Radio France player v1.4: </p>
+  <p id="metadataMessage">Radio France player v1.5: </p>
 
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
@@ -108,6 +108,41 @@
     let hls;
     const video = document.getElementById('my-video');
 
+    const stationList = document.getElementById('station-list');
+    const playPauseButton = document.getElementById('playPauseButton');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    const upBtn = document.getElementById('upBtn');
+    const downBtn = document.getElementById('downBtn');
+
+    // Keystroke monitoring using event.key for better compatibility with your device
+    document.addEventListener('keydown', (event) => {
+        // Handle Play/Pause
+        if (event.key === '0') {
+            handlePlayPauseClick();
+        }
+
+        // Handle Previous Station
+        if (event.key === '2' || event.key === 'ArrowUp' || event.key === 'MediaTrackPrevious') {
+            playPreviousStation();
+        }
+
+        // Handle Next Station
+        if (event.key === '8' || event.key === 'ArrowDown' || event.key === 'MediaTrackNext') {
+            playNextStation();
+        }
+
+        // Handle Previous Page
+        if (event.key === '4' || event.key === 'ArrowLeft') {
+            goToPreviousPage();
+        }
+
+        // Handle Next Page
+        if (event.key === '6' || event.key === 'ArrowRight') {
+            goToNextPage();
+        }
+    });
+
     function initializeHLS() {
       if (hls) {
         hls.destroy();
@@ -117,13 +152,6 @@
     }
 
     initializeHLS();
-
-    const stationList = document.getElementById('station-list');
-    const playPauseButton = document.getElementById('playPauseButton');
-    const prevPageBtn = document.getElementById('prevPageBtn');
-    const nextPageBtn = document.getElementById('nextPageBtn');
-    const upBtn = document.getElementById('upBtn');
-    const downBtn = document.getElementById('downBtn');
 
     const allStations = [
       { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0, cue: 'France Inter cue.mp3' },
@@ -355,35 +383,6 @@
 
     video.addEventListener('pause', () => {
       playPauseButton.textContent = "Play (0)";
-    });
-
-    // Keystroke monitoring using event.key for better compatibility with your device
-    document.addEventListener('keydown', (event) => {
-
-        // Handle Play/Pause
-        if (event.key === '0') {
-            handlePlayPauseClick();
-        }
-
-        // Handle Previous Station
-        if (event.key === '2' || event.key === 'ArrowUp' || event.key === 'MediaTrackPrevious') {
-            playPreviousStation();
-        }
-
-        // Handle Next Station
-        if (event.key === '8' || event.key === 'ArrowDown' || event.key === 'MediaTrackNext') {
-            playNextStation();
-        }
-
-        // Handle Previous Page
-        if (event.key === '4' || event.key === 'ArrowLeft') {
-            goToPreviousPage();
-        }
-
-        // Handle Next Page
-        if (event.key === '6' || event.key === 'ArrowRight') {
-            goToNextPage();
-        }
     });
 
     // Mouse Edge Slide for Page Navigation (with debounce)
