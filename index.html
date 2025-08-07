@@ -96,11 +96,11 @@
     </ul>
 
   <div id="page-nav-buttons">
-    <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page</button>
-    <button id="nextPageBtn" onclick="goToNextPage()">Next Page &gt;</button>
+    <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page (4)</button>
+    <button id="nextPageBtn" onclick="goToNextPage()">Next Page (6) &gt;</button>
   </div>
 
-  <button id="playPauseButton" onclick="handlePlayPauseClick()">Play</button>
+  <button id="playPauseButton" onclick="handlePlayPauseClick()">Play (0)</button>
 
   <video id="my-video" controls playsinline></video>
 
@@ -173,11 +173,11 @@
 
         navigator.mediaSession.setActionHandler('play', () => {
           video.play();
-          playPauseButton.textContent = "Pause";
+          playPauseButton.textContent = "Pause (0)";
         });
         navigator.mediaSession.setActionHandler('pause', () => {
           video.pause();
-          playPauseButton.textContent = "Play";
+          playPauseButton.textContent = "Play (0)";
         });
         navigator.mediaSession.setActionHandler('nexttrack', playNextStation);
         navigator.mediaSession.setActionHandler('previoustrack', playPreviousStation);
@@ -191,29 +191,24 @@
         const radiotitle = station.name;
 
         // --- Aggressive Stream Stop ---
-        // 1. Pause the video playback
         video.pause();
-        // 2. Clear the video source and force it to load (disconnect from previous stream)
-        video.removeAttribute('src'); // Removes the src attribute entirely
-        video.load(); // Forces the video element to reset its internal state
+        video.removeAttribute('src');
+        video.load();
         // --- End Aggressive Stream Stop ---
 
-        // Now, destroy the old HLS instance and create a new one for the new stream
         initializeHLS();
 
         const cueToPlay = stationCues[station.id];
 
         if (cueToPlay) {
-          cueToPlay.stop(); // Stop any currently playing cue
-          cueToPlay.off('end'); // Remove previous 'end' listener
+          cueToPlay.stop();
+          cueToPlay.off('end');
           cueToPlay.once('end', () => {
-            // After cue ends, start the live stream
             hls.loadSource(url);
             video.play();
           });
           cueToPlay.play();
         } else {
-          // If no specific cue, directly load and play the live stream
           hls.loadSource(url);
           video.play();
         }
@@ -234,7 +229,7 @@
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
         currentPlayingStationGlobalIndex = globalIndex;
-        playPauseButton.textContent = "Pause";
+        playPauseButton.textContent = "Pause (0)";
       }
     }
 
@@ -357,11 +352,44 @@
     renderStationsForPage(currentPage);
 
     video.addEventListener('play', () => {
-      playPauseButton.textContent = "Pause";
+      playPauseButton.textContent = "Pause (0)";
     });
 
     video.addEventListener('pause', () => {
-      playPauseButton.textContent = "Play";
+      playPauseButton.textContent = "Play (0)";
+    });
+
+    // Key event listener for keyboard
+    document.addEventListener('keydown', (event) => {
+      // Prevent default browser actions for these keys
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', '2', '4', '6', '8', '0', 'MediaTrackPrevious', 'MediaTrackNext'].includes(event.key)) {
+        event.preventDefault();
+      }
+
+      // Play/Pause (0)
+      if (event.key === '0') {
+        handlePlayPauseClick();
+      }
+
+      // Previous Station (ArrowUp, 2, MediaTrackPrevious)
+      if (event.key === 'ArrowUp' || event.key === '2' || event.key === 'MediaTrackPrevious') {
+        playPreviousStation();
+      }
+
+      // Next Station (ArrowDown, 8, MediaTrackNext)
+      if (event.key === 'ArrowDown' || event.key === '8' || event.key === 'MediaTrackNext') {
+        playNextStation();
+      }
+
+      // Previous Page (ArrowLeft, 4)
+      if (event.key === 'ArrowLeft' || event.key === '4') {
+        goToPreviousPage();
+      }
+
+      // Next Page (ArrowRight, 6)
+      if (event.key === 'ArrowRight' || event.key === '6') {
+        goToNextPage();
+      }
     });
 
     // Mouse Edge Slide for Page Navigation (with debounce)
