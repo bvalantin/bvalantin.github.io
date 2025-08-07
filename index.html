@@ -115,44 +115,6 @@
     const upBtn = document.getElementById('upBtn');
     const downBtn = document.getElementById('downBtn');
 
-    // Keystroke monitoring using event.key for better compatibility with your device
-    document.addEventListener('keydown', (event) => {
-        // Handle Play/Pause
-        if (event.key === '0') {
-            handlePlayPauseClick();
-        }
-
-        // Handle Previous Station
-        if (event.key === '2' || event.key === 'ArrowUp' || event.key === 'MediaTrackPrevious') {
-            playPreviousStation();
-        }
-
-        // Handle Next Station
-        if (event.key === '8' || event.key === 'ArrowDown' || event.key === 'MediaTrackNext') {
-            playNextStation();
-        }
-
-        // Handle Previous Page
-        if (event.key === '4' || event.key === 'ArrowLeft') {
-            goToPreviousPage();
-        }
-
-        // Handle Next Page
-        if (event.key === '6' || event.key === 'ArrowRight') {
-            goToNextPage();
-        }
-    });
-
-    function initializeHLS() {
-      if (hls) {
-        hls.destroy();
-      }
-      hls = new Hls();
-      hls.attachMedia(video);
-    }
-
-    initializeHLS();
-
     const allStations = [
       { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0, cue: 'France Inter cue.mp3' },
       { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0, cue: 'France info cue.mp3' },
@@ -187,6 +149,45 @@
         });
       }
     });
+
+    // Keystroke monitoring using event.key for better compatibility with your device
+    document.addEventListener('keydown', (event) => {
+        // Handle Play/Pause
+        if (event.key === '0') {
+            handlePlayPauseClick();
+        }
+
+        // Handle Previous Station
+        if (event.key === '2' || event.key === 'ArrowUp' || event.key === 'MediaTrackPrevious') {
+            playPreviousStation();
+        }
+
+        // Handle Next Station
+        if (event.key === '8' || event.key === 'ArrowDown' || event.key === 'MediaTrackNext') {
+            playNextStation();
+        }
+
+        // Handle Previous Page
+        if (event.key === '4' || event.key === 'ArrowLeft') {
+            goToPreviousPage();
+        }
+
+        // Handle Next Page
+        if (event.key === '6' || event.key === 'ArrowRight') {
+            goToNextPage();
+        }
+    });
+
+    // All the functions are defined here, after all the variables and listeners
+    function initializeHLS() {
+      if (hls) {
+        hls.destroy();
+      }
+      hls = new Hls();
+      hls.attachMedia(video);
+    }
+
+    initializeHLS();
 
     function updateMediaSessionMetadata(title, artist, album, artwork) {
       if ('mediaSession' in navigator) {
