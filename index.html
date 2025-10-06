@@ -8,7 +8,6 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
   <style>
-    /* Hide the video element completely */
     #my-video {
       display: none;
     }
@@ -44,7 +43,6 @@
       text-align: center;
       border: 1px solid #FF6B35;
     }
-    /* Highlighted station style */
     #station-list a.highlighted {
       background-color: #FFD700;
       color: #9A2CA0;
@@ -81,42 +79,71 @@
     #page-nav-buttons button:hover, #list-nav-buttons button:hover {
       background-color: #BA55D3;
     }
+    #exportLogs {
+      margin-top: 10px;
+      background-color: #FFD700;
+      color: #9A2CA0;
+    }
   </style>
 </head>
 <body>
-  <!-- Rest of your HTML remains unchanged -->
   <p id="metadataMessage">Radio France player v1.8: </p>
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
     <button id="downBtn" onclick="moveHighlight('down')">Down</button>
   </div>
-  <ul id="station-list">
-  </ul>
+  <ul id="station-list"></ul>
   <div id="page-nav-buttons">
     <button id="prevPageBtn" onclick="goToPreviousPage()">&lt; Previous Page (4)</button>
     <button id="nextPageBtn" onclick="goToNextPage()">Next Page (6) &gt;</button>
   </div>
   <button id="playPauseButton" onclick="handlePlayPauseClick()">Play (0)</button>
+  <button id="exportLogs" onclick="exportLogs()">Export Logs</button>
   <video id="my-video" controls playsinline></video>
 
   <script>
+    // Log storage
+    const streamLog = JSON.parse(localStorage.getItem('streamLog')) || [];
+
+    // Log function
+    function logEvent(eventType, details = {}) {
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        event: eventType,
+        details: details,
+      };
+      streamLog.push(logEntry);
+      localStorage.setItem('streamLog', JSON.stringify(streamLog));
+      console.log(logEntry);
+    }
+
+    // Export logs
+    function exportLogs() {
+      const dataStr = JSON.stringify(streamLog, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const exportFileDefaultName = 'stream_logs.json';
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
+
+    // Initialize HLS and Howler
     let hls;
     const video = document.getElementById('my-video');
-
     const stationList = document.getElementById('station-list');
     const playPauseButton = document.getElementById('playPauseButton');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
     const upBtn = document.getElementById('upBtn');
     const downBtn = document.getElementById('downBtn');
-
     const allStations = [
       { id: 'france-inter', name: 'France Inter', url: 'https://stream.radiofrance.fr/franceinter/franceinter.m3u8?id=radiofranceBose', page: 0, cue: 'France Inter cue.mp3' },
       { id: 'franceinfo', name: 'Franceinfo', url: 'https://stream.radiofrance.fr/franceinfo/franceinfo.m3u8?id=radiofranceBose', page: 0, cue: 'France info cue.mp3' },
       { id: 'france-culture', name: 'France Culture', url: 'https://stream.radiofrance.fr/franceculture/franceculture.m3u8?id=radiofranceBose', page: 0, cue: 'France culture cue.mp3' },
       { id: 'la-musique-d-inter', name: 'La Musique d\'Inter', url: 'https://stream.radiofrance.fr/franceinterlamusiqueinter/franceinterlamusiqueinter.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip', name: 'FIP', url: 'https://stream.radiofrance.fr/fip/fip.m3u8?id=radiofranceBose', page: 1 },
-      { id: 'fip-rock-new', name: 'FIP Rock (2)', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 },
+      { id: 'fip-rock-new', name: 'FIP Rock', url: 'https://stream.radiofrance.fr/fiprock/fiprock.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-jazz', name: 'FIP Jazz', url: 'https://stream.radiofrance.fr/fipjazz/fipjazz.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-groove', name: 'FIP Groove', url: 'https://stream.radiofrance.fr/fipgroove/fipgroove.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-monde', name: 'FIP Monde', url: 'https://stream.radiofrance.fr/fipworld/fipworld.m3u8?id=radiofranceBose', page: 1 },
@@ -128,19 +155,36 @@
       { id: 'fip-hiphop', name: 'FIP Hip Hop', url: 'https://stream.radiofrance.fr/fiphiphop/fiphiphop.m3u8?id=radiofranceBose', page: 1 },
       { id: 'fip-sacre-francais', name: 'FIP Sacré Français', url: 'https://stream.radiofrance.fr/fipsacrefrancais/fipsacrefrancais.m3u8?id=radiofranceBose', page: 1 }
     ];
-
     let currentPage = 0;
     const maxPage = Math.max(...allStations.map(s => s.page));
     let currentPlayingStationGlobalIndex = -1;
     let highlightedStationIndexOnPage = 0;
-
     const stationCues = {};
+
+    // Initialize HLS and Howler
+    function initializeHLS() {
+      if (hls) hls.destroy();
+      hls = new Hls();
+      hls.attachMedia(video);
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        logEvent('hls_error', { type: data.type, details: data.details, error: data.error });
+      });
+      hls.on(Hls.Events.BUFFERING, () => logEvent('buffering'));
+      hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
+        logEvent('level_loaded', { level: data.level, duration: data.details.totalduration });
+      });
+    }
+
+    // Your existing functions
     allStations.forEach(station => {
       if (station.cue) {
         stationCues[station.id] = new Howl({
           src: [station.cue],
           html5: true,
-          preload: true
+          preload: true,
+          onplay: () => logEvent('cue_play', { station: station.id }),
+          onload: () => logEvent('cue_load', { station: station.id }),
+          onloaderror: (soundId, error) => logEvent('cue_load_error', { station: station.id, error: error }),
         });
       }
     });
@@ -163,15 +207,6 @@
         }
     });
 
-    function initializeHLS() {
-      if (hls) {
-        hls.destroy();
-      }
-      hls = new Hls();
-      hls.attachMedia(video);
-    }
-    initializeHLS();
-
     function updateMediaSessionMetadata(title, artist, album, artwork) {
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -182,7 +217,6 @@
             { src: artwork, sizes: '512x512', type: 'image/png' }
           ]
         });
-
         navigator.mediaSession.setActionHandler('play', () => {
           video.play();
           playPauseButton.textContent = "Pause (0)";
@@ -217,7 +251,6 @@
         visibleLinks.forEach((link, index) => {
             if (index === highlightedStationIndexOnPage) {
                 link.classList.add('highlighted');
-                // Removed the unsupported arguments, so it will now work.
                 link.scrollIntoView();
             } else {
                 link.classList.remove('highlighted');
@@ -228,20 +261,17 @@
     function renderStationsForPage(pageIndex) {
         stationList.innerHTML = '';
         const stationsOnPage = allStations.filter(station => station.page === pageIndex);
-
         if (stationsOnPage.length === 0) {
             highlightedStationIndexOnPage = -1;
         } else if (highlightedStationIndexOnPage >= stationsOnPage.length || highlightedStationIndexOnPage < 0) {
             highlightedStationIndexOnPage = 0;
         }
-
         stationsOnPage.forEach((station, index) => {
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.id = station.id;
             a.href = "#";
             a.textContent = station.name;
-
             if (index === highlightedStationIndexOnPage) {
                 a.classList.add('highlighted');
             }
@@ -261,15 +291,12 @@
     function moveHighlight(direction) {
         const stationsOnPage = allStations.filter(station => station.page === currentPage);
         if (stationsOnPage.length === 0) return;
-
         if (direction === 'down') {
             highlightedStationIndexOnPage = (highlightedStationIndexOnPage + 1) % stationsOnPage.length;
         } else if (direction === 'up') {
             highlightedStationIndexOnPage = (highlightedStationIndexOnPage - 1 + stationsOnPage.length) % stationsOnPage.length;
         }
-
         updateHighlight();
-
         const highlightedStationOnPage = stationsOnPage[highlightedStationIndexOnPage];
         const globalIndexToPlay = allStations.findIndex(s => s.id === highlightedStationOnPage.id);
         playStation(globalIndexToPlay);
@@ -319,12 +346,10 @@
         const station = allStations[globalIndex];
         const url = station.url;
         const radiotitle = station.name;
-
         video.pause();
         video.removeAttribute('src');
         video.load();
         initializeHLS();
-
         const cueToPlay = stationCues[station.id];
         if (cueToPlay) {
             cueToPlay.stop();
@@ -338,7 +363,6 @@
             hls.loadSource(url);
             video.play();
         }
-
         if (station.page !== currentPage) {
             currentPage = station.page;
             const stationsOnNewPage = allStations.filter(s => s.page === currentPage);
@@ -351,7 +375,6 @@
             if (highlightedStationIndexOnPage === -1 && stationsOnCurrentPage.length > 0) highlightedStationIndexOnPage = 0;
             updateHighlight();
         }
-
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
         currentPlayingStationGlobalIndex = globalIndex;
@@ -360,11 +383,9 @@
     }
 
     renderStationsForPage(currentPage);
-
     video.addEventListener('play', () => {
       playPauseButton.textContent = "Pause (0)";
     });
-
     video.addEventListener('pause', () => {
       playPauseButton.textContent = "Play (0)";
     });
@@ -373,7 +394,6 @@
     let lastPageSwitchTime = 0;
     const PAGE_SWITCH_COOLDOWN = 500;
     const EDGE_THRESHOLD = 20;
-
     document.addEventListener('mousemove', (event) => {
       const now = Date.now();
       if (now - lastPageSwitchTime < PAGE_SWITCH_COOLDOWN) {
@@ -389,6 +409,6 @@
         goToPreviousPage();
       }
     });
-</script>
+  </script>
 </body>
 </html>
