@@ -24,11 +24,6 @@
       margin-bottom: 5px;
       color: #FFD700;
     }
-    #metadataDisplay {
-      font-size: 0.8em;
-      margin-bottom: 5px;
-      color: #FFD700;
-    }
     #station-list {
       list-style: none;
       padding: 0;
@@ -93,7 +88,6 @@
 </head>
 <body>
   <p id="metadataMessage">Radio France player v1.8: </p>
-  <p id="metadataDisplay">Now playing: </p>
   <div id="list-nav-buttons">
     <button id="upBtn" onclick="moveHighlight('up')">Up</button>
     <button id="downBtn" onclick="moveHighlight('down')">Down</button>
@@ -172,22 +166,9 @@
       if (hls) hls.destroy();
       hls = new Hls();
       hls.attachMedia(video);
-
       hls.on(Hls.Events.ERROR, (event, data) => {
         logEvent('hls_error', { type: data.type, details: data.details, error: data.error });
       });
-
-      hls.on(Hls.Events.FRAG_BUFFERED, (event, data) => {
-        const id3Frames = data.frag.id3Frames;
-        if (id3Frames) {
-          id3Frames.forEach(frame => {
-            const value = new TextDecoder().decode(frame.data);
-            document.getElementById('metadataDisplay').textContent = value;
-            logEvent('metadata', { value: value });
-          });
-        }
-      });
-
       hls.on(Hls.Events.BUFFERING, () => logEvent('buffering'));
       hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
         logEvent('level_loaded', { level: data.level, duration: data.details.totalduration });
@@ -395,7 +376,6 @@
             updateHighlight();
         }
         document.getElementById('metadataMessage').textContent = `Now playing: ${radiotitle}`;
-        document.getElementById('metadataDisplay').textContent = `Now playing: ${radiotitle}`;
         updateMediaSessionMetadata(radiotitle, "Radio France", "Live Stream", "https://www.logotheque-vectorielle.fr/wp-content/uploads/2023/11/logo-vectorielle-radio-france.jpg");
         currentPlayingStationGlobalIndex = globalIndex;
         playPauseButton.textContent = "Pause (0)";
